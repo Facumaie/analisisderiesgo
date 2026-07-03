@@ -142,10 +142,7 @@
     <div class="login-logo">🛡️</div>
     <div class="login-title">Análisis de Informes de Riesgo</div>
     <div class="login-sub">Departamento Seguridad en Eventos Deportivos · DPEM</div>
-    <div class="login-perfil-btns">
-      <button class="login-perfil-btn activo" id="perfil-btn-DIP" onclick="seleccionarPerfilLogin('DIP')">DIP<span class="sub">Informes Preventivos</span></button>
-      <button class="login-perfil-btn" id="perfil-btn-DSED" onclick="seleccionarPerfilLogin('DSED')">DSED<span class="sub">Departamento</span></button>
-    </div>
+    <input type="text" id="login-user" class="login-input" placeholder="Usuario" autocomplete="off" style="text-transform:uppercase" onkeydown="if(event.key==='Enter') document.getElementById('login-pass').focus()">
     <div id="login-error-box"></div>
     <input type="password" id="login-pass" class="login-input" placeholder="Contraseña" autocomplete="off" onkeydown="if(event.key==='Enter') intentarLogin()">
     <button class="login-btn" onclick="intentarLogin()">Ingresar</button>
@@ -173,6 +170,7 @@
         <button class="tab" id="tab-v" onclick="setTab('v')">⚔️ Rivalidades</button>
         <button class="tab" id="tab-r" onclick="setTab('r')">⚠️ Radicalizados</button>
         <button class="tab" id="tab-n" onclick="setTab('n')">📰 Noticias</button>
+        <button class="tab" id="tab-u" onclick="setTab('u')" style="display:none">👥 Usuarios</button>
       </div>
       <span class="perfil-badge" id="perfil-badge" onclick="cerrarSesion()" title="Cerrar sesión">👤 — · 🚪</span>
     </div>
@@ -182,34 +180,53 @@
 
 <script type="module">
 import { initializeApp } from "https://www.gstatic.com/firebasejs/11.0.0/firebase-app.js";
-import { getFirestore, collection, addDoc, setDoc, updateDoc, deleteDoc, doc, onSnapshot, query, orderBy, serverTimestamp } from "https://www.gstatic.com/firebasejs/11.0.0/firebase-firestore.js";
+import { getFirestore, collection, addDoc, setDoc, updateDoc, deleteDoc, doc, getDoc, getDocs, onSnapshot, query, orderBy, serverTimestamp } from "https://www.gstatic.com/firebasejs/11.0.0/firebase-firestore.js";
 
-// ── LOGIN / PERFILES ──────────────────────────────────────────────────────────
-const PERFILES = {
-  DIP:  { pass: 'DIP-UCO', label: 'División Informes Preventivos' },
-  DSED: { pass: 'parte1',  label: 'Departamento DSED' },
-};
-let perfilSeleccionadoLogin = 'DIP';
-window.seleccionarPerfilLogin = p => {
-  perfilSeleccionadoLogin = p;
-  document.getElementById('perfil-btn-DIP').className  = 'login-perfil-btn' + (p==='DIP'  ? ' activo' : '');
-  document.getElementById('perfil-btn-DSED').className = 'login-perfil-btn' + (p==='DSED' ? ' activo' : '');
-  document.getElementById('login-error-box').innerHTML = '';
-  document.getElementById('login-pass').focus();
-};
-window.intentarLogin = () => {
+// ── LOGIN / USUARIOS — gestionados desde Firestore (colección air_usuarios) ──
+// El admin agrega/quita usuarios y permisos desde la pestaña 👥 Usuarios,
+// sin tocar el código. Primer ingreso: se crean DIP y DSED como admins.
+const MODULOS = [
+  { id:'h', label:'🏠 Inicio' },
+  { id:'i', label:'📋 Informes' },
+  { id:'e', label:'📊 Equipos' },
+  { id:'v', label:'⚔️ Rivalidades' },
+  { id:'r', label:'⚠️ Radicalizados' },
+  { id:'n', label:'📰 Noticias' },
+];
+const TODOS_MODULOS = MODULOS.map(m => m.id);
+let currentUser = null;
+let usuarios = [];
+
+async function seedUsuariosSiVacio() {
+  const snap = await getDocs(collection(db,'air_usuarios'));
+  if (!snap.empty) return;
+  await setDoc(doc(db,'air_usuarios','DIP'),  { nombre:'División Informes Preventivos', clave:'DIP-UCO', admin:true, activo:true, permisos:TODOS_MODULOS, creado:serverTimestamp() });
+  await setDoc(doc(db,'air_usuarios','DSED'), { nombre:'Departamento DSED', clave:'parte1', admin:true, activo:true, permisos:TODOS_MODULOS, creado:serverTimestamp() });
+}
+
+window.intentarLogin = async () => {
+  const user = (document.getElementById('login-user').value||'').trim().toUpperCase();
   const pass = document.getElementById('login-pass').value;
-  if (pass === PERFILES[perfilSeleccionadoLogin].pass) {
-    sessionStorage.setItem('air_perfil', perfilSeleccionadoLogin);
-    iniciarApp(perfilSeleccionadoLogin);
-  } else {
-    document.getElementById('login-error-box').innerHTML = `<div class="login-error">⚠️ Contraseña incorrecta</div>`;
-    document.getElementById('login-pass').value = '';
+  const box = document.getElementById('login-error-box');
+  if (!user || !pass) { box.innerHTML = `<div class="login-error">⚠️ Completá usuario y contraseña</div>`; return; }
+  box.innerHTML = `<div style="font-size:12px;color:#6b7280;margin-bottom:12px">Verificando...</div>`;
+  try {
+    await seedUsuariosSiVacio();
+    const d = await getDoc(doc(db,'air_usuarios',user));
+    if (!d.exists() || d.data().clave !== pass) {
+      box.innerHTML = `<div class="login-error">⚠️ Usuario o contraseña incorrectos</div>`;
+      document.getElementById('login-pass').value = ''; return;
+    }
+    if (d.data().activo === false) { box.innerHTML = `<div class="login-error">⚠️ Usuario deshabilitado. Contactá a un administrador.</div>`; return; }
+    sessionStorage.setItem('air_user', user);
+    iniciarApp(user, { id:user, ...d.data() });
+  } catch(e) {
+    box.innerHTML = `<div class="login-error">⚠️ Error de conexión: ${e.message}</div>`;
   }
 };
 window.cerrarSesion = () => {
   if (!confirm('¿Cerrar sesión?')) return;
-  sessionStorage.removeItem('air_perfil');
+  sessionStorage.removeItem('air_user');
   location.reload();
 };
 
@@ -362,6 +379,16 @@ let fixture = [], informes = [], equiposExtra = {}, radicalizados = [];
 let unsubs = [];
 
 function conectarFirebase() {
+  unsubs.push(onSnapshot(collection(db,'air_usuarios'), snap => {
+    usuarios = snap.docs.map(d => ({ id: d.id, ...d.data() }));
+    if (currentUser) {
+      const yo = usuarios.find(u => u.id === currentUser.id);
+      if (!yo || yo.activo === false) { sessionStorage.removeItem('air_user'); alert('Tu usuario fue deshabilitado o eliminado por un administrador.'); location.reload(); return; }
+      currentUser = yo;
+      aplicarPermisos();
+    }
+    render();
+  }));
   unsubs.push(onSnapshot(query(collection(db,'air_fixture'), orderBy('fecha','asc')), snap => {
     fixture = snap.docs.map(d => ({ id: d.id, ...d.data() })); render();
   }));
@@ -377,21 +404,42 @@ function conectarFirebase() {
   setTimeout(() => { document.getElementById('loading-overlay').style.display='none'; document.getElementById('app').style.display='block'; render(); }, 600);
 }
 
-function iniciarApp(perfilKey) {
-  st.perfilActual = perfilKey;
+function aplicarPermisos() {
+  const perms = currentUser?.admin ? TODOS_MODULOS : (currentUser?.permisos || []);
+  MODULOS.forEach(m => { const el = document.getElementById('tab-'+m.id); if (el) el.style.display = perms.includes(m.id) ? '' : 'none'; });
+  const tu = document.getElementById('tab-u'); if (tu) tu.style.display = currentUser?.admin ? '' : 'none';
+  const puedeVerTab = st.tab === 'u' ? currentUser?.admin : perms.includes(st.tab);
+  if (!puedeVerTab) st.tab = perms[0] || 'h';
+  ['h','i','e','v','r','n','u'].forEach(x => { const el = document.getElementById('tab-'+x); if (el) el.className = 'tab'+(st.tab===x?' active':''); });
+}
+function iniciarApp(userKey, userData) {
+  currentUser = userData;
+  st.perfilActual = userKey;
   document.getElementById('login-screen').style.display = 'none';
   document.getElementById('loading-overlay').style.display = 'flex';
-  document.getElementById('perfil-badge').innerHTML = `👤 ${perfilKey} · 🚪`;
+  document.getElementById('perfil-badge').innerHTML = `👤 ${userKey}${userData.admin ? ' ★' : ''} · 🚪`;
+  aplicarPermisos();
   conectarFirebase();
 }
-(function checkSesion() {
-  const g = sessionStorage.getItem('air_perfil');
-  if (g && PERFILES[g]) { document.getElementById('login-screen').style.display='none'; setTimeout(()=>iniciarApp(g),0); }
+(async function checkSesion() {
+  const g = sessionStorage.getItem('air_user');
+  if (!g) return;
+  document.getElementById('login-screen').style.display = 'none';
+  document.getElementById('loading-overlay').style.display = 'flex';
+  try {
+    const d = await getDoc(doc(db,'air_usuarios',g));
+    if (d.exists() && d.data().activo !== false) { iniciarApp(g, { id:g, ...d.data() }); return; }
+  } catch(e) {}
+  sessionStorage.removeItem('air_user');
+  document.getElementById('loading-overlay').style.display = 'none';
+  document.getElementById('login-screen').style.display = 'flex';
 })();
 
 window.setTab = t => {
+  const puede = t === 'u' ? currentUser?.admin : (currentUser?.admin ? TODOS_MODULOS : (currentUser?.permisos || [])).includes(t);
+  if (!puede) return;
   st.tab = t;
-  ['h','i','e','v','r','n'].forEach(x => { const el = document.getElementById('tab-'+x); if(el) el.className = 'tab'+(t===x?' active':''); });
+  ['h','i','e','v','r','n','u'].forEach(x => { const el = document.getElementById('tab-'+x); if(el) el.className = 'tab'+(t===x?' active':''); });
   render();
 };
 
@@ -1285,6 +1333,108 @@ function renderTabInicio() {
 // ═══════════════════════════════════════════════════════════════════════════════
 // RENDER PRINCIPAL
 // ═══════════════════════════════════════════════════════════════════════════════
+// ═══════════════════════════════════════════════════════════════════════════════
+// TAB USUARIOS — gestión de usuarios y permisos (solo administradores)
+// ═══════════════════════════════════════════════════════════════════════════════
+let formUsuario = false;
+function renderTabUsuarios() {
+  if (!currentUser?.admin) return `<div class="fc">Sin permisos para ver esta sección.</div>`;
+  const adminsActivos = usuarios.filter(u => u.admin && u.activo !== false).length;
+  return `
+  <div class="fc">
+    <div style="display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:8px">
+      <div>
+        <div style="font-size:16px;font-weight:700">👥 Usuarios y permisos</div>
+        <div style="font-size:12px;color:#6b7280;margin-top:3px">Los cambios impactan al instante, sin tocar el código. Cada usuario ve únicamente los módulos habilitados. Los administradores (★) ven todo y gestionan usuarios.</div>
+      </div>
+      <button class="btn-main" style="flex:none;padding:9px 16px" onclick="toggleFormUsuario()">${formUsuario ? '✖ Cancelar' : '➕ Nuevo usuario'}</button>
+    </div>
+    ${formUsuario ? `
+    <div style="margin-top:14px;padding:14px;background:#f8fafc;border:1px solid #e2e8f0;border-radius:12px">
+      <div class="fr fr2">
+        <div><div class="sec-label">Usuario (para ingresar)</div><input id="nu-user" placeholder="Ej: PEREZ" style="text-transform:uppercase"></div>
+        <div><div class="sec-label">Nombre / dependencia</div><input id="nu-nombre" placeholder="Ej: Of. Pérez — DIP"></div>
+      </div>
+      <div class="fr fr2">
+        <div><div class="sec-label">Contraseña</div><input id="nu-clave" type="text" placeholder="Contraseña" autocomplete="off"></div>
+        <div><div class="sec-label">Rol</div><select id="nu-admin"><option value="no">Usuario</option><option value="si">Administrador ★</option></select></div>
+      </div>
+      <div class="sec-label">Módulos habilitados</div>
+      <div style="display:flex;gap:8px;flex-wrap:wrap;margin-top:4px">
+        ${MODULOS.map(m => `<label style="display:flex;align-items:center;gap:6px;font-size:13px;background:#fff;border:1px solid #e5e7eb;border-radius:8px;padding:6px 10px;cursor:pointer"><input type="checkbox" class="nu-perm" value="${m.id}" checked style="width:15px;height:15px;accent-color:#0C447C"> ${m.label}</label>`).join('')}
+      </div>
+      <div class="btns-row" style="margin-top:12px"><button class="btn-main" style="flex:none;padding:9px 18px" onclick="crearUsuario()">💾 Crear usuario</button></div>
+    </div>` : ''}
+  </div>
+  ${usuarios.slice().sort((a,b) => a.id.localeCompare(b.id)).map(u => usuarioCardHtml(u, adminsActivos)).join('')}`;
+}
+function usuarioCardHtml(u, adminsActivos) {
+  const esYo = u.id === currentUser.id;
+  const perms = u.admin ? TODOS_MODULOS : (u.permisos || []);
+  const ultimoAdmin = u.admin && u.activo !== false && adminsActivos <= 1;
+  return `
+  <div class="fc" style="${u.activo === false ? 'opacity:.55' : ''}">
+    <div style="display:flex;justify-content:space-between;align-items:flex-start;gap:10px;flex-wrap:wrap">
+      <div>
+        <b style="font-size:15px">👤 ${esc(u.id)}</b>
+        ${u.admin ? '<span style="color:#b45309;font-size:12px;font-weight:700"> ★ Admin</span>' : ''}
+        ${esYo ? '<span style="font-size:11px;color:#2563eb"> (vos)</span>' : ''}
+        ${u.activo === false ? '<span style="font-size:11px;color:#b91c1c;font-weight:700"> · DESHABILITADO</span>' : ''}
+        <div style="font-size:12px;color:#6b7280">${esc(u.nombre || '—')}</div>
+      </div>
+      <div style="display:flex;gap:6px;flex-wrap:wrap">
+        <button class="btn-mini" onclick="cambiarClaveUsuario('${u.id}')">🔑 Cambiar clave</button>
+        <button class="btn-mini" onclick="toggleAdminUsuario('${u.id}')" ${ultimoAdmin ? 'disabled title="Es el único administrador activo"' : ''}>${u.admin ? '⬇ Quitar admin' : '⬆ Hacer admin'}</button>
+        <button class="btn-mini" onclick="toggleActivoUsuario('${u.id}')" ${esYo || ultimoAdmin ? 'disabled' : ''}>${u.activo === false ? '✅ Habilitar' : '🚫 Deshabilitar'}</button>
+        <button class="btn-mini" style="color:#b91c1c;border-color:#fca5a5" onclick="eliminarUsuario('${u.id}')" ${esYo || ultimoAdmin ? 'disabled' : ''}>🗑 Eliminar</button>
+      </div>
+    </div>
+    <div style="display:flex;gap:8px;flex-wrap:wrap;margin-top:10px">
+      ${MODULOS.map(m => `<label style="display:flex;align-items:center;gap:6px;font-size:12px;background:${perms.includes(m.id) ? '#eef4fb' : '#f9fafb'};border:1px solid ${perms.includes(m.id) ? '#bcd3ec' : '#e5e7eb'};border-radius:8px;padding:5px 9px;cursor:${u.admin ? 'not-allowed' : 'pointer'}"><input type="checkbox" ${perms.includes(m.id) ? 'checked' : ''} ${u.admin ? 'disabled' : ''} onchange="togglePermisoUsuario('${u.id}','${m.id}',this.checked)" style="width:14px;height:14px;accent-color:#0C447C"> ${m.label}</label>`).join('')}
+    </div>
+    ${u.admin ? '<div style="font-size:11px;color:#9ca3af;margin-top:6px">Los administradores tienen acceso a todos los módulos.</div>' : ''}
+  </div>`;
+}
+window.toggleFormUsuario = () => { formUsuario = !formUsuario; render(); };
+window.crearUsuario = async () => {
+  const id = (document.getElementById('nu-user').value || '').trim().toUpperCase().replace(/[^A-Z0-9ÑÁÉÍÓÚ_-]/g, '');
+  const nombre = (document.getElementById('nu-nombre').value || '').trim();
+  const clave = document.getElementById('nu-clave').value;
+  const admin = document.getElementById('nu-admin').value === 'si';
+  const permisos = Array.from(document.querySelectorAll('.nu-perm:checked')).map(c => c.value);
+  if (!id || !clave) { alert('Completá usuario y contraseña.'); return; }
+  if (usuarios.some(u => u.id === id)) { alert('Ya existe un usuario con ese nombre.'); return; }
+  if (!admin && permisos.length === 0) { alert('Habilitá al menos un módulo.'); return; }
+  await setDoc(doc(db,'air_usuarios',id), { nombre, clave, admin, activo: true, permisos: admin ? TODOS_MODULOS : permisos, creado: serverTimestamp() });
+  formUsuario = false; render();
+};
+window.cambiarClaveUsuario = async id => {
+  const nueva = prompt(`Nueva contraseña para ${id}:`);
+  if (!nueva) return;
+  await updateDoc(doc(db,'air_usuarios',id), { clave: nueva });
+  alert(`Contraseña de ${id} actualizada.`);
+};
+window.toggleAdminUsuario = async id => {
+  const u = usuarios.find(x => x.id === id); if (!u) return;
+  if (u.admin && !confirm(`¿Quitar rol de administrador a ${id}?`)) return;
+  await updateDoc(doc(db,'air_usuarios',id), u.admin ? { admin: false } : { admin: true, permisos: TODOS_MODULOS });
+};
+window.toggleActivoUsuario = async id => {
+  const u = usuarios.find(x => x.id === id); if (!u) return;
+  await updateDoc(doc(db,'air_usuarios',id), { activo: u.activo === false });
+};
+window.eliminarUsuario = async id => {
+  if (!confirm(`¿Eliminar al usuario ${id}? Esta acción no se puede deshacer.`)) return;
+  await deleteDoc(doc(db,'air_usuarios',id));
+};
+window.togglePermisoUsuario = async (id, mod, on) => {
+  const u = usuarios.find(x => x.id === id); if (!u || u.admin) return;
+  const set = new Set(u.permisos || []);
+  on ? set.add(mod) : set.delete(mod);
+  if (set.size === 0) { alert('El usuario debe tener al menos un módulo habilitado.'); render(); return; }
+  await updateDoc(doc(db,'air_usuarios',id), { permisos: Array.from(set) });
+};
+
 function render() {
   const c = document.getElementById('content-area'); if (!c || !st.perfilActual) return;
   const activeEl = document.activeElement; const activeId = activeEl?.id; const selStart = activeEl?.selectionStart;
@@ -1295,6 +1445,7 @@ function render() {
     case 'v': c.innerHTML = renderTabRivalidades(); break;
     case 'r': c.innerHTML = renderTabRadicalizados(); break;
     case 'n': c.innerHTML = renderTabNoticias(); break;
+    case 'u': c.innerHTML = renderTabUsuarios(); break;
   }
   if (activeId) { const el = document.getElementById(activeId); if (el && el.tagName !== 'BUTTON') { el.focus(); try{ el.setSelectionRange(selStart, selStart); }catch(e){} } }
 }
