@@ -1,0 +1,1304 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Análisis de Informes de Riesgo — DSED</title>
+<style>
+  *{box-sizing:border-box;margin:0;padding:0}
+  body{font-family:system-ui,-apple-system,sans-serif;background:#f0f2f5;color:#1a1a1a;min-height:100vh}
+  .header{background:#0C447C;padding:12px 20px;display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:8px;position:sticky;top:0;z-index:100}
+  .header-left{display:flex;align-items:center;gap:12px}
+  .logo{width:38px;height:38px;border-radius:8px;background:rgba(255,255,255,.15);display:flex;align-items:center;justify-content:center;font-size:20px;flex-shrink:0}
+  .htitle{font-size:14px;font-weight:600;color:#fff}
+  .hsub{font-size:11px;color:rgba(255,255,255,.7);margin-top:1px}
+  .tab-bar{display:flex;gap:2px;background:rgba(0,0,0,.2);border-radius:8px;padding:3px;flex-wrap:wrap}
+  .tab{padding:6px 12px;border-radius:6px;font-size:12px;font-weight:500;cursor:pointer;color:rgba(255,255,255,.7);border:none;background:transparent;transition:.15s}
+  .tab.active{background:#fff;color:#0C447C}
+  .content{padding:16px 20px;max-width:920px;margin:0 auto}
+  .perfil-badge{font-size:11px;color:#fff;background:rgba(255,255,255,.15);padding:5px 10px;border-radius:6px;cursor:pointer}
+
+  .fc{background:#fff;border:1px solid #e5e7eb;border-radius:12px;padding:16px;margin-bottom:12px}
+  .sec-label{font-size:11px;font-weight:600;color:#6b7280;margin-bottom:4px;text-transform:uppercase;letter-spacing:.05em}
+  .fr{display:grid;gap:10px;margin-bottom:12px}
+  .fr2{grid-template-columns:1fr 1fr}
+  .fr3{grid-template-columns:1fr 1fr 1fr}
+  .fr1{grid-template-columns:1fr}
+  input,select,textarea{width:100%;border:1px solid #d1d5db;border-radius:8px;padding:8px 11px;font-size:13px;background:#fff;color:#111;font-family:inherit;outline:none;transition:.1s}
+  input:focus,select:focus,textarea:focus{border-color:#3b82f6;box-shadow:0 0 0 3px rgba(59,130,246,.1)}
+  textarea{resize:vertical;min-height:82px;line-height:1.5}
+  .btns-row{display:flex;gap:8px;margin-top:4px;flex-wrap:wrap}
+  .btn-main{flex:1;padding:10px;border-radius:8px;background:#0C447C;color:#fff;font-size:13px;font-weight:500;border:none;cursor:pointer;display:flex;align-items:center;justify-content:center;gap:6px;transition:.1s}
+  .btn-main:hover{background:#185FA5}
+  .btn-main:disabled{opacity:.5;cursor:not-allowed}
+  .btn-sn{flex:1;padding:10px;border-radius:8px;background:#f3f4f6;color:#374151;font-size:13px;font-weight:500;border:1px solid #e5e7eb;cursor:pointer;display:flex;align-items:center;justify-content:center;gap:6px}
+  .btn-sn:hover{background:#e5e7eb}
+  .btn-mini{padding:3px 10px;border-radius:6px;font-size:11px;cursor:pointer;border:1px solid #e5e7eb;background:#fff;color:#374151}
+
+  .stat-row{display:grid;grid-template-columns:repeat(4,1fr);gap:8px;margin-bottom:14px}
+  .sb{background:#fff;border:1px solid #e5e7eb;border-radius:10px;padding:12px 14px}
+  .sn{font-size:22px;font-weight:600;color:#111}
+  .sl{font-size:11px;color:#6b7280;margin-top:2px}
+  .sb.riesgo-alto{background:#fee2e2;border-color:#ef4444}.sb.riesgo-alto .sn{color:#dc2626}
+  .sb.riesgo-medio{background:#fef3c7;border-color:#f59e0b}.sb.riesgo-medio .sn{color:#b45309}
+  .sb.riesgo-bajo{background:#d1fae5;border-color:#10b981}.sb.riesgo-bajo .sn{color:#047857}
+
+  .bdg{display:inline-flex;align-items:center;padding:3px 10px;border-radius:20px;font-size:11px;font-weight:700;letter-spacing:.03em}
+  .bdg-ALTO{background:#dc2626;color:#fff}
+  .bdg-MEDIO{background:#f59e0b;color:#fff}
+  .bdg-BAJO{background:#059669;color:#fff}
+  .bdg-outline-ALTO{background:#fee2e2;color:#991b1b;border:1px solid #fca5a5}
+  .bdg-outline-MEDIO{background:#fef3c7;color:#92400e;border:1px solid #fcd34d}
+  .bdg-outline-BAJO{background:#d1fae5;color:#065f46;border:1px solid #6ee7b7}
+  .bdg-gris{background:#f3f4f6;color:#6b7280;border:1px solid #e5e7eb;font-weight:500}
+
+  .rc{background:#fff;border:1px solid #e5e7eb;border-radius:12px;padding:14px 16px;margin-bottom:8px}
+  .rc.alto{border-left:4px solid #dc2626}
+  .rc.medio{border-left:4px solid #f59e0b}
+  .rc.bajo{border-left:4px solid #059669}
+  .rc.pendiente{border-left:4px solid #9ca3af}
+
+  /* Nivel de riesgo selector */
+  .riesgo-sel{display:flex;gap:6px}
+  .riesgo-btn{flex:1;padding:11px;border-radius:8px;font-size:13px;font-weight:700;cursor:pointer;border:1px solid #e5e7eb;background:#f9fafb;color:#6b7280;transition:.1s}
+  .riesgo-btn.sel-ALTO{background:#dc2626;border-color:#991b1b;color:#fff}
+  .riesgo-btn.sel-MEDIO{background:#f59e0b;border-color:#b45309;color:#fff}
+  .riesgo-btn.sel-BAJO{background:#059669;border-color:#047857;color:#fff}
+
+  /* Checklist */
+  .chk-grupo{border:1px solid #e5e7eb;border-radius:10px;margin-bottom:8px;overflow:hidden}
+  .chk-grupo-h{background:#f9fafb;padding:8px 12px;font-size:12px;font-weight:600;color:#374151;display:flex;justify-content:space-between;align-items:center;cursor:pointer}
+  .chk-item{display:flex;align-items:flex-start;gap:9px;padding:8px 12px;border-top:1px solid #f3f4f6;cursor:pointer}
+  .chk-item:hover{background:#f9fafb}
+  .chk-item input[type=checkbox]{width:17px;height:17px;flex-shrink:0;margin-top:1px;accent-color:#0C447C;cursor:pointer}
+  .chk-item .txt{font-size:12.5px;color:#374151;line-height:1.4}
+  .chk-item.done .txt{color:#9ca3af;text-decoration:line-through}
+  .prog-bar{height:7px;background:#e5e7eb;border-radius:4px;overflow:hidden;flex:1}
+  .prog-fill{height:100%;background:#059669;border-radius:4px;transition:.2s}
+
+  .factor{display:flex;gap:8px;align-items:flex-start;padding:6px 10px;border-radius:8px;font-size:12px;margin-bottom:5px;line-height:1.4}
+  .factor.pos{background:#fee2e2;color:#7f1d1d}
+  .factor.neg{background:#d1fae5;color:#065f46}
+  .factor.info{background:#f3f4f6;color:#374151}
+
+  .search-bar{display:flex;gap:8px}
+  .search-bar input{flex:1}
+  .chips{display:flex;gap:6px;flex-wrap:wrap;margin-top:8px}
+  .chip{padding:5px 12px;border-radius:20px;font-size:11px;cursor:pointer;border:1px solid #d1d5db;background:#fff;color:#374151}
+  .chip:hover{background:#eff6ff;border-color:#3b82f6;color:#1e40af}
+
+  .noticia{background:#fff;border:1px solid #e5e7eb;border-radius:10px;padding:11px 14px;margin-bottom:7px}
+  .noticia.alta{border-left:4px solid #dc2626}
+  .noticia .nt{font-size:13px;font-weight:600;color:#111;line-height:1.35;margin-bottom:4px}
+  .noticia .nm{font-size:11px;color:#6b7280;display:flex;gap:8px;flex-wrap:wrap;align-items:center}
+  .src-tag{background:#e0f2fe;color:#075985;padding:1px 8px;border-radius:10px;font-size:10px;font-weight:600}
+
+  .persona-card{background:#fff;border:1px solid #e5e7eb;border-radius:12px;padding:12px 14px;margin-bottom:8px;display:flex;gap:10px}
+  .persona-avatar{width:36px;height:36px;border-radius:50%;border:2px solid;display:flex;align-items:center;justify-content:center;font-size:16px;flex-shrink:0}
+  .persona-info{flex:1;min-width:0}
+  .persona-nombre{font-size:13.5px;font-weight:700;margin-bottom:4px}
+  .persona-meta{display:flex;gap:5px;flex-wrap:wrap;margin-bottom:5px}
+  .persona-tag{padding:2px 8px;border-radius:10px;font-size:10px;font-weight:500}
+  .tag-dni{background:#f3f4f6;color:#374151;border:1px solid #e5e7eb}
+  .search-highlight{background:#fde047;border-radius:2px}
+
+  .empty{text-align:center;padding:36px 16px;color:#9ca3af;font-size:13px;background:#fff;border:1px dashed #d1d5db;border-radius:12px}
+  .rel-badge{padding:4px 12px;border-radius:20px;font-size:12px;font-weight:700;color:#fff;display:inline-block}
+  .club-pill{display:inline-block;padding:3px 10px;border-radius:14px;font-size:11px;margin:2px;border:1px solid}
+
+  .login-wrap{min-height:100vh;display:flex;align-items:center;justify-content:center;background:linear-gradient(160deg,#0C447C,#062647);padding:16px}
+  .login-card{background:#fff;border-radius:18px;padding:34px 30px;max-width:400px;width:100%;box-shadow:0 24px 70px rgba(0,0,0,.35);text-align:center}
+  .login-logo{width:74px;height:74px;border-radius:16px;margin:0 auto 14px;background:#eef4fb;display:flex;align-items:center;justify-content:center;font-size:38px}
+  .login-title{font-size:17px;font-weight:700;color:#111}
+  .login-sub{font-size:12px;color:#6b7280;margin:4px 0 20px}
+  .login-perfil-btns{display:flex;gap:8px;margin-bottom:16px}
+  .login-perfil-btn{flex:1;padding:10px;border-radius:10px;border:1px solid #e5e7eb;background:#f9fafb;cursor:pointer;font-size:13px;font-weight:700;color:#6b7280}
+  .login-perfil-btn .sub{display:block;font-size:10px;font-weight:400;margin-top:2px}
+  .login-perfil-btn.activo{background:#0C447C;border-color:#0C447C;color:#fff}
+  .login-input{margin-bottom:12px;text-align:center;font-size:15px;padding:11px}
+  .login-btn{width:100%;padding:12px;border-radius:10px;background:#0C447C;color:#fff;font-size:14px;font-weight:600;border:none;cursor:pointer}
+  .login-error{background:#fee2e2;color:#7f1d1d;border:1px solid #fca5a5;border-radius:8px;padding:8px;font-size:12px;margin-bottom:12px}
+  .loading-overlay{position:fixed;inset:0;background:rgba(255,255,255,.9);z-index:400;display:flex;align-items:center;justify-content:center;gap:10px;font-size:14px;color:#374151}
+  .spinner{width:22px;height:22px;border:3px solid #e5e7eb;border-top-color:#0C447C;border-radius:50%;animation:spin .8s linear infinite}
+  @keyframes spin{to{transform:rotate(360deg)}}
+
+  @media(max-width:720px){
+    .fr2,.fr3{grid-template-columns:1fr}
+    .stat-row{grid-template-columns:repeat(2,1fr)}
+    .content{padding:12px}
+    .header{padding:10px 12px}
+  }
+  @media print{
+    body{background:#fff}
+    .header,.no-print{display:none!important}
+    .content{max-width:100%;padding:0}
+  }
+</style>
+</head>
+<body>
+
+<div id="login-screen" class="login-wrap">
+  <div class="login-card">
+    <div class="login-logo">🛡️</div>
+    <div class="login-title">Análisis de Informes de Riesgo</div>
+    <div class="login-sub">Departamento Seguridad en Eventos Deportivos · DPEM</div>
+    <div class="login-perfil-btns">
+      <button class="login-perfil-btn activo" id="perfil-btn-DIP" onclick="seleccionarPerfilLogin('DIP')">DIP<span class="sub">Informes Preventivos</span></button>
+      <button class="login-perfil-btn" id="perfil-btn-DSED" onclick="seleccionarPerfilLogin('DSED')">DSED<span class="sub">Departamento</span></button>
+    </div>
+    <div id="login-error-box"></div>
+    <input type="password" id="login-pass" class="login-input" placeholder="Contraseña" autocomplete="off" onkeydown="if(event.key==='Enter') intentarLogin()">
+    <button class="login-btn" onclick="intentarLogin()">Ingresar</button>
+  </div>
+</div>
+
+<div id="loading-overlay" class="loading-overlay" style="display:none">
+  <div class="spinner"></div> Conectando con Firebase...
+</div>
+
+<div id="app" style="display:none">
+  <div class="header">
+    <div class="header-left">
+      <div class="logo">🛡️</div>
+      <div>
+        <div class="htitle">Análisis de Informes de Riesgo</div>
+        <div class="hsub">Departamento Seguridad en Eventos Deportivos · DPEM</div>
+      </div>
+    </div>
+    <div style="display:flex;align-items:center;gap:10px;flex-wrap:wrap">
+      <div class="tab-bar">
+        <button class="tab active" id="tab-h" onclick="setTab('h')">🏠 Inicio</button>
+        <button class="tab" id="tab-i" onclick="setTab('i')">📋 Informes</button>
+        <button class="tab" id="tab-e" onclick="setTab('e')">📊 Equipos</button>
+        <button class="tab" id="tab-v" onclick="setTab('v')">⚔️ Rivalidades</button>
+        <button class="tab" id="tab-r" onclick="setTab('r')">⚠️ Radicalizados</button>
+        <button class="tab" id="tab-n" onclick="setTab('n')">📰 Noticias</button>
+      </div>
+      <span class="perfil-badge" id="perfil-badge" onclick="cerrarSesion()" title="Cerrar sesión">👤 — · 🚪</span>
+    </div>
+  </div>
+  <div class="content" id="content-area"></div>
+</div>
+
+<script type="module">
+import { initializeApp } from "https://www.gstatic.com/firebasejs/11.0.0/firebase-app.js";
+import { getFirestore, collection, addDoc, setDoc, updateDoc, deleteDoc, doc, onSnapshot, query, orderBy, serverTimestamp } from "https://www.gstatic.com/firebasejs/11.0.0/firebase-firestore.js";
+
+// ── LOGIN / PERFILES ──────────────────────────────────────────────────────────
+const PERFILES = {
+  DIP:  { pass: 'DIP-UCO', label: 'División Informes Preventivos' },
+  DSED: { pass: 'parte1',  label: 'Departamento DSED' },
+};
+let perfilSeleccionadoLogin = 'DIP';
+window.seleccionarPerfilLogin = p => {
+  perfilSeleccionadoLogin = p;
+  document.getElementById('perfil-btn-DIP').className  = 'login-perfil-btn' + (p==='DIP'  ? ' activo' : '');
+  document.getElementById('perfil-btn-DSED').className = 'login-perfil-btn' + (p==='DSED' ? ' activo' : '');
+  document.getElementById('login-error-box').innerHTML = '';
+  document.getElementById('login-pass').focus();
+};
+window.intentarLogin = () => {
+  const pass = document.getElementById('login-pass').value;
+  if (pass === PERFILES[perfilSeleccionadoLogin].pass) {
+    sessionStorage.setItem('air_perfil', perfilSeleccionadoLogin);
+    iniciarApp(perfilSeleccionadoLogin);
+  } else {
+    document.getElementById('login-error-box').innerHTML = `<div class="login-error">⚠️ Contraseña incorrecta</div>`;
+    document.getElementById('login-pass').value = '';
+  }
+};
+window.cerrarSesion = () => {
+  if (!confirm('¿Cerrar sesión?')) return;
+  sessionStorage.removeItem('air_perfil');
+  location.reload();
+};
+
+const firebaseConfig = {
+  apiKey: "AIzaSyBCaMF3aUlEBxfKZLDCyksGwSgNsWUGHt0",
+  authDomain: "reportediario-a65ad.firebaseapp.com",
+  projectId: "reportediario-a65ad",
+  storageBucket: "reportediario-a65ad.firebasestorage.app",
+  messagingSenderId: "774251538034",
+  appId: "1:774251538034:web:221fc5f6327612dd1c04eb"
+};
+const app = initializeApp(firebaseConfig);
+const db  = getFirestore(app);
+
+// ═══════════════════════════════════════════════════════════════════════════════
+// BASE DE RIVALIDADES — según mapa de rivalidades entre barras del fútbol argentino
+// y documentos "Rivalidades históricas del fútbol porteño".
+// Niveles: max (rivalidad máxima) · enem (enemistad) · conf (conflicto) ·
+//          tens (tensión) · resp (respeto/buena relación) · ali (alianza/amistad)
+// ═══════════════════════════════════════════════════════════════════════════════
+const RIV = {
+  'BOCA JUNIORS':        { max:['RIVER PLATE','RACING CLUB','INDEPENDIENTE','SAN LORENZO'], enem:['ESTUDIANTES (LP)','NEWELLS OLD BOYS','LANUS','BANFIELD'], conf:['HURACAN','VELEZ SARSFIELD','TALLERES (CBA)','ROSARIO CENTRAL'], tens:['DEFENSA Y JUSTICIA','CENTRAL CORDOBA (SDE)'], resp:['BARRACAS CENTRAL','ALDOSIVI'], ali:['BARRACAS CENTRAL'] },
+  'RIVER PLATE':         { max:['BOCA JUNIORS','INDEPENDIENTE','RACING CLUB','SAN LORENZO'], enem:['DEPORTIVO MORON','TIGRE','ESTUDIANTES (LP)','ROSARIO CENTRAL'], conf:['NEWELLS OLD BOYS','TALLERES (CBA)','HURACAN','VELEZ SARSFIELD'], tens:['DEFENSA Y JUSTICIA','GIMNASIA (LP)'], resp:['BARRACAS CENTRAL','ALDOSIVI'], ali:['BARRACAS CENTRAL'] },
+  'INDEPENDIENTE':       { max:['RACING CLUB','BOCA JUNIORS','SAN LORENZO','RIVER PLATE'], enem:['ESTUDIANTES (LP)','ROSARIO CENTRAL','HURACAN'], conf:['LANUS','VELEZ SARSFIELD','TALLERES (CBA)'], tens:['BANFIELD','DEFENSA Y JUSTICIA'], resp:['DEPORTIVO RIESTRA'], ali:['DEPORTIVO RIESTRA'] },
+  'RACING CLUB':         { max:['INDEPENDIENTE','BOCA JUNIORS','RIVER PLATE','SAN LORENZO'], enem:['HURACAN','NEWELLS OLD BOYS','TIGRE','LANUS'], conf:['VELEZ SARSFIELD','TALLERES (CBA)','ROSARIO CENTRAL'], tens:['ARSENAL','DEFENSA Y JUSTICIA'], resp:['BARRACAS CENTRAL'], ali:['ARSENAL'] },
+  'SAN LORENZO':         { max:['HURACAN','BOCA JUNIORS','RIVER PLATE','INDEPENDIENTE'], enem:['NEWELLS OLD BOYS','RACING CLUB','GIMNASIA (LP)'], conf:['VELEZ SARSFIELD','ESTUDIANTES (LP)','LANUS'], tens:['ARSENAL','DEFENSA Y JUSTICIA'], resp:['CENTRAL CORDOBA (SDE)'], ali:['CENTRAL CORDOBA (SDE)'] },
+  'HURACAN':             { max:['SAN LORENZO','BOCA JUNIORS','INDEPENDIENTE','RACING CLUB'], enem:['VELEZ SARSFIELD','NEWELLS OLD BOYS'], conf:['ESTUDIANTES (LP)','TIGRE','COLON'], tens:['BANFIELD','DEFENSA Y JUSTICIA','BARRACAS CENTRAL'], resp:['ALDOSIVI'], ali:['ALDOSIVI'] },
+  'VELEZ SARSFIELD':     { max:['SAN LORENZO','HURACAN','BOCA JUNIORS','FERRO CARRIL OESTE'], enem:['ESTUDIANTES (LP)','INDEPENDIENTE','ALL BOYS'], conf:['RACING CLUB','RIVER PLATE','LANUS'], tens:['DEFENSA Y JUSTICIA','TIGRE','ARGENTINOS JUNIORS'], resp:['BARRACAS CENTRAL'], ali:['BARRACAS CENTRAL'] },
+  'ESTUDIANTES (LP)':    { max:['GIMNASIA (LP)','BOCA JUNIORS','INDEPENDIENTE'], enem:['RIVER PLATE','HURACAN','NEWELLS OLD BOYS'], conf:['SAN LORENZO','ROSARIO CENTRAL','LANUS'], tens:['ALDOSIVI','DEFENSA Y JUSTICIA'], resp:['CENTRAL CORDOBA (SDE)'], ali:[] },
+  'GIMNASIA (LP)':       { max:['ESTUDIANTES (LP)','SAN LORENZO'], enem:['BOCA JUNIORS','INDEPENDIENTE','HURACAN'], conf:['VELEZ SARSFIELD','LANUS','BANFIELD'], tens:['DEFENSA Y JUSTICIA','TIGRE'], resp:['ALDOSIVI'], ali:[] },
+  'LANUS':               { max:['BANFIELD','BOCA JUNIORS','RACING CLUB'], enem:['HURACAN','VELEZ SARSFIELD','INDEPENDIENTE'], conf:['SAN LORENZO','ESTUDIANTES (LP)'], tens:['TALLERES (CBA)','DEFENSA Y JUSTICIA'], resp:['CENTRAL CORDOBA (SDE)'], ali:['CENTRAL CORDOBA (SDE)'] },
+  'BANFIELD':            { max:['LANUS','BOCA JUNIORS','INDEPENDIENTE'], enem:['RACING CLUB','QUILMES'], conf:['VELEZ SARSFIELD','TIGRE','DEFENSA Y JUSTICIA'], tens:['ALDOSIVI','SARMIENTO'], resp:['BARRACAS CENTRAL'], ali:[] },
+  'NEWELLS OLD BOYS':    { max:['ROSARIO CENTRAL','BOCA JUNIORS','RIVER PLATE'], enem:['RACING CLUB','SAN LORENZO','HURACAN'], conf:['VELEZ SARSFIELD','ESTUDIANTES (LP)','CENTRAL CORDOBA (SDE)'], tens:['DEFENSA Y JUSTICIA','TIGRE'], resp:['ALDOSIVI'], ali:[] },
+  'ROSARIO CENTRAL':     { max:['NEWELLS OLD BOYS','BOCA JUNIORS'], enem:['TALLERES (CBA)','COLON','ARGENTINOS JUNIORS'], conf:['RACING CLUB','INDEPENDIENTE'], tens:['DEFENSA Y JUSTICIA','SARMIENTO'], resp:['BARRACAS CENTRAL'], ali:[] },
+  'TALLERES (CBA)':      { max:['BELGRANO (CBA)','BOCA JUNIORS','RIVER PLATE'], enem:['INSTITUTO (CBA)','ROSARIO CENTRAL'], conf:['RACING CLUB','INDEPENDIENTE','VELEZ SARSFIELD'], tens:['ARSENAL','SARMIENTO'], resp:['ALDOSIVI'], ali:[] },
+  'BELGRANO (CBA)':      { max:['TALLERES (CBA)','INSTITUTO (CBA)','BOCA JUNIORS'], enem:[], conf:['RACING CLUB','INDEPENDIENTE'], tens:['SARMIENTO','DEFENSA Y JUSTICIA'], resp:['BARRACAS CENTRAL'], ali:[] },
+  'INSTITUTO (CBA)':     { max:['TALLERES (CBA)','BELGRANO (CBA)'], enem:['RACING CLUB'], conf:[], tens:[], resp:[], ali:[] },
+  'COLON':               { max:['UNION (SF)','ROSARIO CENTRAL'], enem:['ALDOSIVI','RIVER PLATE'], conf:['BOCA JUNIORS','INDEPENDIENTE','TALLERES (CBA)'], tens:['DEFENSA Y JUSTICIA','SARMIENTO'], resp:['CENTRAL CORDOBA (SDE)'], ali:[] },
+  'UNION (SF)':          { max:['COLON','ROSARIO CENTRAL'], enem:['ALDOSIVI'], conf:['BOCA JUNIORS','RIVER PLATE','TALLERES (CBA)'], tens:['INSTITUTO (CBA)','SARMIENTO'], resp:['BARRACAS CENTRAL'], ali:[] },
+  'ATLETICO TUCUMAN':    { max:['SAN MARTIN (T)','CENTRAL CORDOBA (SDE)'], enem:['NEWELLS OLD BOYS','RIVER PLATE'], conf:['BOCA JUNIORS','INDEPENDIENTE','TALLERES (CBA)'], tens:['DEFENSA Y JUSTICIA'], resp:['ALDOSIVI'], ali:[] },
+  'SAN MARTIN (T)':      { max:['ATLETICO TUCUMAN','CENTRAL CORDOBA (SDE)'], enem:['SAN LORENZO','NEWELLS OLD BOYS'], conf:['BOCA JUNIORS','RIVER PLATE','INDEPENDIENTE'], tens:['DEFENSA Y JUSTICIA'], resp:['ALDOSIVI'], ali:[] },
+  'CENTRAL CORDOBA (SDE)':{ max:['SAN MARTIN (T)','ATLETICO TUCUMAN'], enem:['BOCA JUNIORS','NEWELLS OLD BOYS'], conf:['RIVER PLATE','INDEPENDIENTE','TALLERES (CBA)'], tens:['DEFENSA Y JUSTICIA'], resp:['BARRACAS CENTRAL','SAN LORENZO','LANUS'], ali:['SAN LORENZO','LANUS'] },
+  'DEFENSA Y JUSTICIA':  { max:[], enem:[], conf:['BANFIELD'], tens:[], resp:[], ali:['TIGRE','PLATENSE','FERRO CARRIL OESTE'] },
+  'ALDOSIVI':            { max:[], enem:['COLON','UNION (SF)'], conf:[], tens:[], resp:[], ali:['HURACAN'] },
+  'BARRACAS CENTRAL':    { max:['NUEVA CHICAGO'], enem:['HURACAN'], conf:['DEPORTIVO RIESTRA'], tens:[], resp:[], ali:['BOCA JUNIORS','RIVER PLATE','VELEZ SARSFIELD'] },
+  'ARSENAL':             { max:[], enem:[], conf:[], tens:['RACING CLUB'], resp:[], ali:['RACING CLUB'] },
+  'SARMIENTO':           { max:[], enem:[], conf:[], tens:['BANFIELD'], resp:[], ali:[] },
+  'ARGENTINOS JUNIORS':  { max:['PLATENSE'], enem:['ALL BOYS','ROSARIO CENTRAL'], conf:['VELEZ SARSFIELD'], tens:['FERRO CARRIL OESTE'], resp:[], ali:[] },
+
+  // ── PRIMERA NACIONAL ────────────────────────────────────────────────────────
+  'CHACARITA JUNIORS':   { max:['ATLANTA','ALL BOYS'], enem:['DEFENSORES DE BELGRANO'], conf:['TIGRE','PLATENSE'], tens:[], resp:[], ali:[] },
+  'ATLANTA':             { max:['CHACARITA JUNIORS','ALL BOYS'], enem:['NUEVA CHICAGO'], conf:['FERRO CARRIL OESTE','COMUNICACIONES'], tens:['DEFENSORES DE BELGRANO'], resp:[], ali:['FENIX'] },
+  'ALL BOYS':            { max:['NUEVA CHICAGO','ATLANTA','CHACARITA JUNIORS'], enem:['ARGENTINOS JUNIORS','VELEZ SARSFIELD','DEPORTIVO ESPAÑOL'], conf:['FERRO CARRIL OESTE','TEMPERLEY'], tens:[], resp:[], ali:[] },
+  'NUEVA CHICAGO':       { max:['ALL BOYS','ALMIRANTE BROWN'], enem:['ATLANTA','TEMPERLEY','BARRACAS CENTRAL'], conf:['DEPORTIVO MORON','DEPORTIVO ESPAÑOL'], tens:[], resp:[], ali:['DOCK SUD'] },
+  'TIGRE':               { max:['PLATENSE','CHACARITA JUNIORS'], enem:['RIVER PLATE','RACING CLUB'], conf:['HURACAN','VELEZ SARSFIELD'], tens:['BANFIELD'], resp:[], ali:['DEFENSA Y JUSTICIA'] },
+  'PLATENSE':            { max:['TIGRE'], enem:['VELEZ SARSFIELD','CHACARITA JUNIORS','ARGENTINOS JUNIORS'], conf:['DEFENSORES DE BELGRANO'], tens:[], resp:[], ali:['DEFENSA Y JUSTICIA'] },
+  'FERRO CARRIL OESTE':  { max:['VELEZ SARSFIELD','DEPORTIVO MORON'], enem:['ATLANTA','NUEVA CHICAGO'], conf:['ALL BOYS','ARGENTINOS JUNIORS'], tens:[], resp:[], ali:['ALMIRANTE BROWN','DEFENSA Y JUSTICIA'] },
+  'DEPORTIVO MORON':     { max:['FERRO CARRIL OESTE','ALMIRANTE BROWN'], enem:['NUEVA CHICAGO','CHICAGO','RIVER PLATE'], conf:['ALMAGRO','DEPORTIVO ESPAÑOL'], tens:[], resp:[], ali:[] },
+  'ALMIRANTE BROWN':     { max:['NUEVA CHICAGO','DEPORTIVO MORON'], enem:['SAN MARTIN (BURZACO)'], conf:['DEPORTIVO ESPAÑOL'], tens:[], resp:[], ali:['FERRO CARRIL OESTE','DEFENSORES DE BELGRANO'] },
+  'QUILMES':             { max:['ARGENTINO DE QUILMES','BANFIELD'], enem:['BERAZATEGUI'], conf:['DOCK SUD'], tens:[], resp:[], ali:['VILLA SAN CARLOS'] },
+  'ARGENTINO DE QUILMES':{ max:['QUILMES'], enem:['BERAZATEGUI','DOCK SUD'], conf:[], tens:[], resp:[], ali:[] },
+  'ESTUDIANTES (BA)':    { max:['ALMAGRO'], enem:[], conf:[], tens:[], resp:[], ali:[] },
+  'ALMAGRO':             { max:['ESTUDIANTES (BA)'], enem:['DEPORTIVO MORON'], conf:[], tens:[], resp:[], ali:[] },
+  'TEMPERLEY':           { max:['LOS ANDES'], enem:['NUEVA CHICAGO','ALL BOYS'], conf:[], tens:[], resp:[], ali:[] },
+  'LOS ANDES':           { max:['TEMPERLEY'], enem:[], conf:[], tens:[], resp:[], ali:[] },
+  'GIMNASIA Y ESGRIMA (MZA)': { max:['INDEPENDIENTE RIVADAVIA'], enem:[], conf:[], tens:[], resp:[], ali:[] },
+  'INDEPENDIENTE RIVADAVIA':  { max:['GIMNASIA Y ESGRIMA (MZA)'], enem:[], conf:[], tens:[], resp:[], ali:[] },
+
+  // ── PRIMERA B METROPOLITANA ─────────────────────────────────────────────────
+  'ACASSUSO':            { max:['SAN ISIDRO'], enem:[], conf:[], tens:[], resp:[], ali:[] },
+  'SAN ISIDRO':          { max:['ACASSUSO'], enem:[], conf:[], tens:[], resp:[], ali:[] },
+  'VILLA SAN CARLOS':    { max:['DEFENSORES DE CAMBACERES'], enem:[], conf:['CLAYPOLE'], tens:[], resp:[], ali:['QUILMES'] },
+  'DEFENSORES DE CAMBACERES': { max:['VILLA SAN CARLOS'], enem:[], conf:[], tens:[], resp:[], ali:[] },
+  'COMUNICACIONES':      { max:['DEPORTIVO ARMENIO'], enem:['ATLANTA'], conf:['SACACHISPAS','DEPORTIVO RIESTRA','DEFENSORES DE BELGRANO'], tens:[], resp:[], ali:['FLANDRIA'] },
+  'DEPORTIVO ARMENIO':   { max:['COMUNICACIONES','COLEGIO ARMENIO'], enem:[], conf:[], tens:[], resp:[], ali:['FENIX'] },
+  'FENIX':               { max:['SACACHISPAS'], enem:[], conf:[], tens:[], resp:[], ali:['ATLANTA','DEPORTIVO ARMENIO'] },
+  'SACACHISPAS':         { max:['FENIX','DEPORTIVO RIESTRA'], enem:['COMUNICACIONES'], conf:[], tens:[], resp:[], ali:[] },
+  'COLEGIO MIDLAND':     { max:['ITUZAINGO'], enem:['GENERAL LAMADRID'], conf:[], tens:[], resp:[], ali:[] },
+  'ITUZAINGO':           { max:['COLEGIO MIDLAND'], enem:[], conf:[], tens:[], resp:[], ali:[] },
+  'DEPORTIVO MERLO':     { max:['ARGENTINO DE MERLO'], enem:[], conf:[], tens:[], resp:[], ali:[] },
+  'ARGENTINO DE MERLO':  { max:['DEPORTIVO MERLO'], enem:['GENERAL LAMADRID'], conf:[], tens:[], resp:[], ali:['VICTORIANO ARENAS'] },
+  'DEPORTIVO RIESTRA':   { max:['SACACHISPAS'], enem:[], conf:['COMUNICACIONES','BARRACAS CENTRAL'], tens:[], resp:[], ali:['INDEPENDIENTE'] },
+  'FLANDRIA':            { max:['LUJAN'], enem:[], conf:[], tens:[], resp:[], ali:['COMUNICACIONES'] },
+
+  // ── PRIMERA C / REGIONALES ──────────────────────────────────────────────────
+  'LAFERRERE':           { max:['SPORTIVO ITALIANO','EXCURSIONISTAS'], enem:['CLAYPOLE'], conf:[], tens:[], resp:[], ali:[] },
+  'SPORTIVO ITALIANO':   { max:['LAFERRERE'], enem:[], conf:[], tens:[], resp:[], ali:['JUVENTUD UNIDA'] },
+  'EXCURSIONISTAS':      { max:['DEFENSORES DE BELGRANO'], enem:['LAFERRERE','MIDLAND'], conf:['GENERAL LAMADRID'], tens:[], resp:[], ali:[] },
+  'DEFENSORES DE BELGRANO': { max:['EXCURSIONISTAS'], enem:['CHACARITA JUNIORS'], conf:['ATLANTA','PLATENSE','COMUNICACIONES'], tens:[], resp:[], ali:['ALMIRANTE BROWN'] },
+  'SAN TELMO':           { max:['DOCK SUD'], enem:[], conf:[], tens:[], resp:[], ali:[] },
+  'DOCK SUD':            { max:['SAN TELMO'], enem:['ARGENTINO DE QUILMES'], conf:['QUILMES'], tens:[], resp:[], ali:['NUEVA CHICAGO'] },
+  'BERAZATEGUI':         { max:['ARGENTINO DE QUILMES'], enem:['QUILMES'], conf:[], tens:[], resp:[], ali:[] },
+  'CLAYPOLE':            { max:['LINIERS'], enem:['LAFERRERE','SAN MARTIN (BURZACO)'], conf:['VILLA SAN CARLOS'], tens:[], resp:[], ali:[] },
+  'JUVENTUD UNIDA':      { max:['ATLAS'], enem:[], conf:[], tens:[], resp:[], ali:['SPORTIVO ITALIANO'] },
+  'ATLAS':               { max:['JUVENTUD UNIDA','CENTRO ESPAÑOL'], enem:[], conf:[], tens:[], resp:[], ali:[] },
+  'GENERAL LAMADRID':    { max:['EXCURSIONISTAS','CAÑUELAS FC'], enem:['ARGENTINO DE MERLO','MIDLAND','COLEGIO MIDLAND'], conf:[], tens:[], resp:[], ali:[] },
+  'CAÑUELAS FC':         { max:['GENERAL LAMADRID'], enem:[], conf:[], tens:[], resp:[], ali:[] },
+  'MIDLAND':             { max:['ITUZAINGO'], enem:['GENERAL LAMADRID','EXCURSIONISTAS'], conf:[], tens:[], resp:[], ali:[] },
+  'LINIERS':             { max:['CLAYPOLE'], enem:[], conf:[], tens:[], resp:[], ali:[] },
+  'YUPANQUI':            { max:['J.J. URQUIZA'], enem:[], conf:[], tens:[], resp:[], ali:[] },
+  'J.J. URQUIZA':        { max:['YUPANQUI'], enem:[], conf:[], tens:[], resp:[], ali:[] },
+  'DEPORTIVO PARAGUAYO': { max:['LUGANO'], enem:[], conf:[], tens:[], resp:[], ali:[] },
+  'LUGANO':              { max:['DEPORTIVO PARAGUAYO'], enem:[], conf:[], tens:[], resp:[], ali:[] },
+  'VICTORIANO ARENAS':   { max:['CENTRAL CORDOBA (R)'], enem:[], conf:[], tens:[], resp:[], ali:['ARGENTINO DE MERLO'] },
+  'CENTRAL CORDOBA (R)': { max:['VICTORIANO ARENAS','SPORTIVO BARRACAS'], enem:[], conf:[], tens:[], resp:[], ali:[] },
+  'SPORTIVO BARRACAS':   { max:['CENTRAL CORDOBA (R)'], enem:[], conf:[], tens:[], resp:[], ali:[] },
+  'LEANDRO N. ALEM':     { max:['EL PORVENIR'], enem:[], conf:[], tens:[], resp:[], ali:[] },
+  'EL PORVENIR':         { max:['LEANDRO N. ALEM'], enem:[], conf:[], tens:[], resp:[], ali:[] },
+  'CENTRO ESPAÑOL':      { max:['ATLAS'], enem:[], conf:[], tens:[], resp:[], ali:[] },
+  'DEPORTIVO ESPAÑOL':   { max:[], enem:['ALL BOYS','NUEVA CHICAGO'], conf:['DEPORTIVO MORON','ALMIRANTE BROWN'], tens:[], resp:[], ali:[] },
+  'SAN MARTIN (BURZACO)':{ max:[], enem:['ALMIRANTE BROWN','CLAYPOLE'], conf:[], tens:[], resp:[], ali:[] },
+  'GUEMES (SDE)':        { max:['CENTRAL CORDOBA (SDE)'], enem:[], conf:[], tens:[], resp:[], ali:[] },
+};
+
+const NIVELES_REL = {
+  max:  { label: 'RIVALIDAD MÁXIMA', color: '#dc2626', pts: 5, desc: 'Enemistad histórica, enfrentamientos frecuentes' },
+  enem: { label: 'ENEMISTAD',        color: '#ea580c', pts: 4, desc: 'Hostilidad con antecedentes de violencia' },
+  conf: { label: 'CONFLICTO',        color: '#d97706', pts: 3, desc: 'Problemas esporádicos, cruces previos' },
+  tens: { label: 'TENSIÓN',          color: '#65a30d', pts: 2, desc: 'Riesgo moderado, cruces verbales o incidentes aislados' },
+  resp: { label: 'RESPETO / BUENA RELACIÓN', color: '#0284c7', pts: -1, desc: 'Buena relación o respeto mutuo entre barras' },
+};
+
+function norm(s){ return (s||'').toUpperCase().normalize('NFD').replace(/[\u0300-\u036f]/g,'').replace(/\s+/g,' ').trim(); }
+const CLUBES = Object.keys(RIV).sort();
+
+function getRelacion(a, b) {
+  a = norm(a); b = norm(b);
+  const da = RIV[a], dbb = RIV[b];
+  for (const nivel of ['max','enem','conf','tens','resp']) {
+    if ((da && da[nivel].map(norm).includes(b)) || (dbb && dbb[nivel].map(norm).includes(a))) return nivel;
+  }
+  return null;
+}
+function esRival(a, b) { const r = getRelacion(a,b); return r && r !== 'resp'; }
+function getAlianzas(club) { const d = RIV[norm(club)]; return d ? d.ali : []; }
+
+// ═══════════════════════════════════════════════════════════════════════════════
+// ESTADO GLOBAL + CONEXIÓN FIRESTORE
+// ═══════════════════════════════════════════════════════════════════════════════
+let st = {
+  tab: 'h', perfilActual: null,
+  partidoAbierto: null,          // id de fixture en análisis
+  formPartido: false,
+  busquedaR: '', formR: false, formAdmision: 'NO', formCaptura: 'NO', selR: new Set(),
+  equipoAbierto: null,
+  rivA: '', rivB: '',
+  filtroInformes: 'pendientes',
+};
+let fixture = [], informes = [], equiposExtra = {}, radicalizados = [];
+let unsubs = [];
+
+function conectarFirebase() {
+  unsubs.push(onSnapshot(query(collection(db,'air_fixture'), orderBy('fecha','asc')), snap => {
+    fixture = snap.docs.map(d => ({ id: d.id, ...d.data() })); render();
+  }));
+  unsubs.push(onSnapshot(query(collection(db,'air_informes'), orderBy('creado','desc')), snap => {
+    informes = snap.docs.map(d => ({ id: d.id, ...d.data() })); render();
+  }));
+  unsubs.push(onSnapshot(collection(db,'air_equipos'), snap => {
+    equiposExtra = {}; snap.docs.forEach(d => equiposExtra[d.id] = d.data()); render();
+  }));
+  unsubs.push(onSnapshot(query(collection(db,'radicalizados_copa'), orderBy('ts','desc')), snap => {
+    radicalizados = snap.docs.map(d => ({ id: d.id, ...d.data() })); render();
+  }));
+  setTimeout(() => { document.getElementById('loading-overlay').style.display='none'; document.getElementById('app').style.display='block'; render(); }, 600);
+}
+
+function iniciarApp(perfilKey) {
+  st.perfilActual = perfilKey;
+  document.getElementById('login-screen').style.display = 'none';
+  document.getElementById('loading-overlay').style.display = 'flex';
+  document.getElementById('perfil-badge').innerHTML = `👤 ${perfilKey} · 🚪`;
+  conectarFirebase();
+}
+(function checkSesion() {
+  const g = sessionStorage.getItem('air_perfil');
+  if (g && PERFILES[g]) { document.getElementById('login-screen').style.display='none'; setTimeout(()=>iniciarApp(g),0); }
+})();
+
+window.setTab = t => {
+  st.tab = t;
+  ['h','i','e','v','r','n'].forEach(x => { const el = document.getElementById('tab-'+x); if(el) el.className = 'tab'+(t===x?' active':''); });
+  render();
+};
+
+const fmt = ts => { try { const d = ts?.toDate ? ts.toDate() : new Date(ts); return d.toLocaleDateString('es-AR',{day:'2-digit',month:'2-digit',year:'numeric'}); } catch(e){ return '—'; } };
+const esc = s => (s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+const DIAS = ['domingo','lunes','martes','miércoles','jueves','viernes','sábado'];
+const MESES = ['enero','febrero','marzo','abril','mayo','junio','julio','agosto','septiembre','octubre','noviembre','diciembre'];
+function fechaLarga(iso){ if(!iso) return '—'; const d = new Date(iso+'T12:00:00'); return `día ${DIAS[d.getDay()]} ${d.getDate()} de ${MESES[d.getMonth()]} del ${d.getFullYear()}`; }
+
+// ═══════════════════════════════════════════════════════════════════════════════
+// MOTOR DE SUGERENCIA DE RIESGO
+// Cruza: rivalidad directa · alianzas cruzadas · antecedentes en informes previos ·
+// flags del perfil de equipo (interna en la barra) · datos del checklist.
+// ═══════════════════════════════════════════════════════════════════════════════
+function historialEquipo(club) {
+  const n = norm(club);
+  return informes.filter(inf => norm(inf.local) === n || norm(inf.visitante) === n);
+}
+function sugerirRiesgo(local, visitante, opts = {}) {
+  const factores = []; let score = 0;
+  const L = norm(local), V = norm(visitante);
+  if (!L || !V) return { riesgo: 'BAJO', score: 0, factores: [{t:'info', txt:'Seleccioná ambos equipos para calcular la sugerencia.'}] };
+
+  // 1) Rivalidad directa
+  const rel = getRelacion(L, V);
+  if (rel) {
+    const nv = NIVELES_REL[rel];
+    score += nv.pts;
+    factores.push({ t: nv.pts > 0 ? 'pos' : 'neg', txt: `${nv.pts>0?'⚔️':'🤝'} Relación directa entre parcialidades: ${nv.label} (${nv.desc}).`, pts: nv.pts });
+  } else {
+    factores.push({ t: 'info', txt: 'ℹ️ Sin rivalidad directa registrada entre ambas parcialidades.', pts: 0 });
+  }
+
+  // 2) Alianzas cruzadas (ej.: Defensores de Belgrano ↔ Almirante Brown vs Morón)
+  const cruces = [];
+  getAlianzas(L).forEach(ali => { if (esRival(ali, V)) { const esMax = getRelacion(ali,V)==='max'; cruces.push({ pts: esMax?3:2, txt:`La radicalizada de ${L} mantiene vínculo de "amistad" con la de ${norm(ali)}, ${esMax?'clásico rival':'rival'} de ${V}. Podrían intentar sumarse a la parcialidad local.` }); } });
+  getAlianzas(V).forEach(ali => { if (esRival(ali, L)) { const esMax = getRelacion(ali,L)==='max'; cruces.push({ pts: esMax?3:2, txt:`La radicalizada de ${V} mantiene vínculo de "amistad" con la de ${norm(ali)}, ${esMax?'clásico rival':'rival'} de ${L}.` }); } });
+  cruces.forEach(c => { score += c.pts; factores.push({ t:'pos', txt: `🔗 Alianza cruzada: ${c.txt}`, pts: c.pts }); });
+
+  // 3) Antecedentes en informes previos (últimos 24 meses)
+  [L, V].forEach(club => {
+    const hist = historialEquipo(club).filter(i => i.id !== opts.excluirId);
+    const altos = hist.filter(i => i.riesgo === 'ALTO').length;
+    const medios = hist.filter(i => i.riesgo === 'MEDIO').length;
+    if (altos >= 2)      { score += 3; factores.push({ t:'pos', txt:`📕 ${club}: registra ${altos} informes previos con conflictividad ALTA.`, pts: 3 }); }
+    else if (altos === 1){ score += 2; factores.push({ t:'pos', txt:`📙 ${club}: registra 1 informe previo con conflictividad ALTA.`, pts: 2 }); }
+    else if (medios >= 2){ score += 1; factores.push({ t:'pos', txt:`📒 ${club}: registra ${medios} informes previos con conflictividad MEDIA.`, pts: 1 }); }
+  });
+
+  // 4) Flags del perfil de equipo
+  [L, V].forEach(club => {
+    const e = equiposExtra[club];
+    if (e?.interna)   { score += 2; factores.push({ t:'pos', txt:`🔺 ${club}: interna / disputa de poder vigente en la facción radicalizada${e.internaDetalle ? ' ('+esc(e.internaDetalle)+')' : ''}.`, pts: 2 }); }
+    if (e?.incidentesRecientes) { score += 2; factores.push({ t:'pos', txt:`🚨 ${club}: incidentes recientes registrados${e.incidentesDetalle ? ' ('+esc(e.incidentesDetalle)+')' : ''}.`, pts: 2 }); }
+  });
+
+  // 5) Datos del análisis (checklist / formulario)
+  if (opts.visitantePermitida) { score += 2; factores.push({ t:'pos', txt:'👥 Encuentro con parcialidad visitante habilitada.', pts: 2 }); }
+  if (opts.tipoPartido === 'clasico')     { score += 2; factores.push({ t:'pos', txt:'🏟️ Partido catalogado como CLÁSICO.', pts: 2 }); }
+  if (opts.tipoPartido === 'definitorio') { score += 2; factores.push({ t:'pos', txt:'🏆 Partido DEFINITORIO (ascenso, descenso, clasificación o final).', pts: 2 }); }
+  if (opts.trascendencia === 'alta')      { score += 1; factores.push({ t:'pos', txt:'📈 Trascendencia deportiva alta.', pts: 1 }); }
+  if (opts.internacional) { score += 1; factores.push({ t:'pos', txt:'🌎 Encuentro internacional: contingente visitante sudamericano — coordinar con contrapartes del país de origen (protocolo 5.10).', pts: 1 }); }
+
+  const riesgo = score >= 5 ? 'ALTO' : score >= 3 ? 'MEDIO' : 'BAJO';
+  return { riesgo, score, factores };
+}
+
+// ═══════════════════════════════════════════════════════════════════════════════
+// CHECKLIST — variables de análisis según Protocolo 4-OPP-010-SOPE, punto 5.3.1
+// ═══════════════════════════════════════════════════════════════════════════════
+const CHECKLIST = [
+  { grupo: 'Del evento y día del partido', items: [
+    { id:'ev_tipo',   txt:'Tipo de partido determinado (amistoso, torneo regular, clásico o definitorio)' },
+    { id:'ev_trasc',  txt:'Trascendencia deportiva evaluada (posiciones en tabla, qué se juega cada equipo)' },
+    { id:'ev_clima',  txt:'Día, horario y previsión climática relevados' },
+    { id:'ev_socio',  txt:'Condiciones socioambientales significativas del entorno verificadas' },
+  ]},
+  { grupo: 'Del organizador', items: [
+    { id:'org_cap',   txt:'Capacidad operativa y antecedentes del organizador en eventos previos' },
+    { id:'org_sanc',  txt:'Antecedentes de sanciones previas del club organizador' },
+  ]},
+  { grupo: 'De las instalaciones', items: [
+    { id:'ins_zona',  txt:'Ubicación del estadio y características de la zona y barrios circundantes' },
+    { id:'ins_afo',   txt:'Capacidad habilitada del estadio verificada' },
+    { id:'ins_fact',  txt:'Factores situacionales (escombros, obras, iluminación) relevados' },
+  ]},
+  { grupo: 'De los concurrentes', items: [
+    { id:'con_cant',  txt:'Cantidad de concurrentes esperados estimada' },
+    { id:'con_visit', txt:'Presencia o no de parcialidad visitante confirmada' },
+    { id:'con_confl', txt:'Nivel de conflictividad interna de los clubes y antecedentes de violencia analizados' },
+    { id:'con_trasl', txt:'Modalidad de traslado de las parcialidades, lugares y horarios de reunión' },
+    { id:'con_restr', txt:'Cruce con restricciones judiciales/administrativas y derecho de admisión (Radicalizados)' },
+  ]},
+  { grupo: 'Fuentes de información', items: [
+    { id:'fue_abier', txt:'Búsqueda en fuentes abiertas: medios periodísticos y redes sociales (pestaña Noticias)' },
+    { id:'fue_ultimo',txt:'Último encuentro de cada equipo revisado (incidentes, cánticos, permanencias)' },
+    { id:'fue_riv',   txt:'Rivalidades, amistades y alianzas cruzadas de ambas parcialidades verificadas' },
+  ]},
+];
+const CHECKLIST_TOTAL = CHECKLIST.reduce((a,g) => a + g.items.length, 0);
+
+// ═══════════════════════════════════════════════════════════════════════════════
+// TAB INFORMES — Fixture + Análisis + Confección del informe
+// ═══════════════════════════════════════════════════════════════════════════════
+window.abrirFormPartido = () => { st.formPartido = true; render(); };
+window.cerrarFormPartido = () => { st.formPartido = false; render(); };
+window.setFiltroInformes = f => { st.filtroInformes = f; render(); };
+
+window.guardarPartido = async () => {
+  const g = id => document.getElementById(id)?.value?.trim() || '';
+  const local = g('fx-local'), visitante = g('fx-visitante'), fecha = g('fx-fecha');
+  if (!local || !visitante || !fecha) { alert('Completá local, visitante y fecha.'); return; }
+  await addDoc(collection(db,'air_fixture'), {
+    local: norm(local), visitante: norm(visitante), fecha,
+    hora: g('fx-hora'), estadio: g('fx-estadio'), torneo: g('fx-torneo'),
+    visitantePermitida: document.getElementById('fx-visit').checked,
+    internacional: document.getElementById('fx-inter').checked,
+    ts: serverTimestamp()
+  });
+  st.formPartido = false; render();
+};
+window.eliminarPartido = async id => {
+  const inf = informes.find(i => i.partidoId === id);
+  if (!confirm('¿Eliminar este partido del fixture?' + (inf ? '\n(El informe asociado NO se elimina)' : ''))) return;
+  await deleteDoc(doc(db,'air_fixture', id));
+};
+
+function informeDePartido(pid) { return informes.find(i => i.partidoId === pid); }
+
+window.abrirAnalisis = pid => { st.partidoAbierto = pid; render(); window.scrollTo(0,0); };
+window.cerrarAnalisis = () => { st.partidoAbierto = null; render(); };
+
+// Estado local del análisis en curso (antes de guardar)
+let anDraft = null;
+function cargarDraft(p) {
+  const inf = informeDePartido(p.id);
+  if (anDraft && anDraft.partidoId === p.id) return anDraft;
+  anDraft = inf ? {
+    partidoId: p.id, infId: inf.id,
+    checklist: { ...(inf.checklist||{}) },
+    tipoPartido: inf.tipoPartido || 'regular',
+    trascendencia: inf.trascendencia || 'media',
+    visitantePermitida: inf.visitantePermitida ?? p.visitantePermitida ?? false,
+    riesgo: inf.riesgo || null,
+    analisis: inf.analisis || '',
+    iniciales: inf.iniciales || '',
+    estado: inf.estado || 'borrador',
+  } : {
+    partidoId: p.id, infId: null, checklist: {},
+    tipoPartido: 'regular', trascendencia: 'media',
+    visitantePermitida: p.visitantePermitida ?? false,
+    riesgo: null, analisis: '', iniciales: '', estado: 'borrador',
+  };
+  return anDraft;
+}
+window.toggleChk = id => { anDraft.checklist[id] = !anDraft.checklist[id]; render(); };
+window.setAnCampo = (campo, val) => { anDraft[campo] = val; render(); };
+window.setAnTexto = (campo, val) => { anDraft[campo] = val; }; // sin re-render (inputs de texto)
+window.setRiesgoManual = r => { anDraft.riesgo = r; render(); };
+
+window.generarBorradorTexto = () => {
+  const p = fixture.find(x => x.id === st.partidoAbierto); if (!p) return;
+  const sug = sugerirRiesgo(p.local, p.visitante, { ...anDraft, internacional: p.internacional, excluirId: anDraft.infId });
+  const riesgo = anDraft.riesgo || sug.riesgo;
+  let t = `Espectáculo deportivo a celebrarse el ${fechaLarga(p.fecha)}${p.hora ? ', a las '+p.hora+' horas' : ''}, frente a su par el ${p.visitante}.\n\n`;
+  t += `En virtud de las razones que posteriormente se expondrán, se gradúa el presente encuentro futbolístico como: CONFLICTIVIDAD ${riesgo}.\n\n`;
+  const razones = sug.factores.filter(f => f.t === 'pos').map(f => '— ' + f.txt.replace(/^[^\s]+\s/, ''));
+  if (razones.length) t += razones.join('\n') + '\n\n';
+  if (!anDraft.visitantePermitida) t += 'El encuentro se disputará sin parcialidad visitante.\n\n';
+  t += '[Completar con la información recabada en fuentes abiertas, último encuentro y demás antecedentes.]';
+  anDraft.analisis = t;
+  render();
+};
+
+window.guardarInforme = async (finalizar = false) => {
+  const p = fixture.find(x => x.id === st.partidoAbierto); if (!p || !anDraft) return;
+  anDraft.analisis  = document.getElementById('an-texto')?.value ?? anDraft.analisis;
+  anDraft.iniciales = document.getElementById('an-iniciales')?.value ?? anDraft.iniciales;
+  const sug = sugerirRiesgo(p.local, p.visitante, { ...anDraft, internacional: p.internacional, excluirId: anDraft.infId });
+  const hechos = Object.values(anDraft.checklist).filter(Boolean).length;
+
+  if (finalizar) {
+    const faltan = [];
+    CHECKLIST.forEach(g => g.items.forEach(it => { if (!anDraft.checklist[it.id]) faltan.push(it.txt); }));
+    if (!anDraft.riesgo && !sug.riesgo) { alert('Definí el nivel de riesgo.'); return; }
+    if (!anDraft.analisis.trim()) { alert('El informe no tiene texto de análisis.'); return; }
+    if (faltan.length > 0 && !confirm(`⚠️ Checklist incompleto — faltan ${faltan.length} puntos del análisis:\n\n• ${faltan.slice(0,6).join('\n• ')}${faltan.length>6 ? '\n• …' : ''}\n\n¿Finalizar el informe de todas formas?`)) return;
+  }
+  const data = {
+    partidoId: p.id, local: p.local, visitante: p.visitante,
+    fechaPartido: p.fecha, hora: p.hora || '', estadio: p.estadio || '', torneo: p.torneo || '',
+    checklist: anDraft.checklist, checklistHechos: hechos, checklistTotal: CHECKLIST_TOTAL,
+    tipoPartido: anDraft.tipoPartido, trascendencia: anDraft.trascendencia,
+    visitantePermitida: anDraft.visitantePermitida,
+    riesgo: anDraft.riesgo || sug.riesgo, riesgoSugerido: sug.riesgo, score: sug.score,
+    factores: sug.factores.map(f => f.txt),
+    analisis: anDraft.analisis, iniciales: anDraft.iniciales,
+    estado: finalizar ? 'finalizado' : 'borrador',
+    actualizado: serverTimestamp(),
+  };
+  if (anDraft.infId) await updateDoc(doc(db,'air_informes', anDraft.infId), data);
+  else { data.creado = serverTimestamp(); const ref = await addDoc(collection(db,'air_informes'), data); anDraft.infId = ref.id; }
+  if (finalizar) { anDraft = null; st.partidoAbierto = null; }
+  render();
+};
+window.eliminarInforme = async id => {
+  if (!confirm('¿Eliminar este informe?')) return;
+  await deleteDoc(doc(db,'air_informes', id)); anDraft = null; render();
+};
+
+// Consolidado (formato DIP)
+window.generarConsolidado = () => {
+  const fins = informes.filter(i => i.estado === 'finalizado').sort((a,b) => (a.fechaPartido||'').localeCompare(b.fechaPartido||''));
+  if (!fins.length) { alert('No hay informes finalizados para consolidar.'); return; }
+  const hoy = new Date();
+  const nro = prompt('Número de Análisis de Riesgo:', String((informes.filter(i=>i.nroConsolidado).length||0) + 1));
+  if (nro === null) return;
+  let t = `INFORME DE ANÁLISIS DE RIESGO\nDivisión Informes Preventivos — Departamento Seguridad en Eventos Deportivos\n\n`;
+  t += `Análisis de Riesgo Nro. ${nro}\nC.A.B.A., ${hoy.getDate()} de ${MESES[hoy.getMonth()]} del ${hoy.getFullYear()}\n\n`;
+  t += `A los Señores integrantes del Comité de\nSeguridad en el Fútbol C.A.B.A.\nS__/__D.\n\n`;
+  t += `Tengo el agrado de dirigirme a ese honorable comité a los fines de llevar a la órbita de su conocimiento el presente informe de análisis de riesgo, el cual es realizado en cumplimiento de la normativa vigente, de conformidad con lo establecido mediante la Ley 5.847, Artículo 6, incisos J, K; el Decreto Reglamentario N° 178/2019, Artículo 19; y la Ley N° 5.688, Artículo 90, inciso 15, ss. y cs.\n\n`;
+  t += `A su vez, la confección se elabora a partir de la utilización de puntos centrales como son, el estudio de la rivalidad entre los equipos protagonistas del encuentro futbolístico, la relación entre ambas parcialidades simpatizantes, incidencias, enfrentamientos entre concurrentes organizados del mismo equipo, entre otros factores de atribución de riesgo. De esta manera, se categorizará como BAJA, MEDIA, o ALTA, la potencial conflictividad.\n\n`;
+  t += `Por otro lado, se deja constancia que la categoría asignada por el personal a mí digno cargo, dependiente del Departamento Seguridad en Eventos Deportivos de la Dirección Prevención en Eventos Masivos, resulta ser meramente orientativa pudiendo diferir de la realidad, enfatizando que la respuesta aquí brindada no resulta ser vinculante a los fines de decidir respecto de la afectación del personal de la fuerza y/o la planificación del sistema de seguridad específico, sirviendo únicamente como material de apoyo específico a los fines de diagramar con mayor precisión el dispositivo de seguridad.\n\n`;
+  t += `${'='.repeat(70)}\n\n`;
+  fins.forEach(i => {
+    t += `Club ${i.local}\n\n`;
+    t += i.analisis.trim() + '\n';
+    if (i.iniciales) t += `${i.iniciales}\n`;
+    t += `\n${'-'.repeat(70)}\n\n`;
+  });
+  t += `Sin otro particular, saludo a Uds. muy atte.\n`;
+  navigator.clipboard.writeText(t).then(() => alert(`✅ Informe consolidado Nro. ${nro} copiado al portapapeles (${fins.length} encuentros).`));
+};
+
+function renderTabInformes() {
+  // ── Vista de análisis de un partido ──────────────────────────────────────────
+  if (st.partidoAbierto) {
+    const p = fixture.find(x => x.id === st.partidoAbierto);
+    if (!p) { st.partidoAbierto = null; return renderTabInformes(); }
+    const d = cargarDraft(p);
+    const sug = sugerirRiesgo(p.local, p.visitante, { ...d, internacional: p.internacional, excluirId: d.infId });
+    const riesgoActual = d.riesgo || sug.riesgo;
+    const hechos = Object.values(d.checklist).filter(Boolean).length;
+    const pct = Math.round(hechos / CHECKLIST_TOTAL * 100);
+    const faltan = CHECKLIST_TOTAL - hechos;
+
+    const checklistHtml = CHECKLIST.map(g => {
+      const gHechos = g.items.filter(it => d.checklist[it.id]).length;
+      return `<div class="chk-grupo">
+        <div class="chk-grupo-h"><span>${g.grupo}</span><span style="font-size:11px;color:${gHechos===g.items.length?'#059669':'#9ca3af'}">${gHechos}/${g.items.length}</span></div>
+        ${g.items.map(it => `
+          <label class="chk-item ${d.checklist[it.id]?'done':''}">
+            <input type="checkbox" ${d.checklist[it.id]?'checked':''} onchange="toggleChk('${it.id}')">
+            <span class="txt">${it.txt}</span>
+          </label>`).join('')}
+      </div>`;
+    }).join('');
+
+    return `
+      <div class="no-print" style="display:flex;justify-content:space-between;align-items:center;margin-bottom:12px;flex-wrap:wrap;gap:8px">
+        <button class="btn-mini" onclick="cerrarAnalisis()">← Volver al fixture</button>
+        <span class="bdg bdg-gris">${d.estado === 'finalizado' ? '✅ Finalizado' : '📝 Borrador'}</span>
+      </div>
+
+      <div class="fc">
+        <div style="display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:8px;margin-bottom:6px">
+          <div style="font-size:16px;font-weight:700">${p.local} <span style="color:#9ca3af;font-weight:400">vs</span> ${p.visitante}</div>
+          <span class="bdg bdg-${riesgoActual}">CONFLICTIVIDAD ${riesgoActual}</span>
+        </div>
+        <div style="font-size:12px;color:#6b7280">📅 ${fechaLarga(p.fecha)}${p.hora?' · 🕒 '+p.hora+' hs':''}${p.estadio?' · 🏟️ '+esc(p.estadio):''}${p.torneo?' · 🏆 '+esc(p.torneo):''}${p.internacional?' · 🌎 Internacional':''}</div>
+      </div>
+
+      <div class="fc">
+        <div class="sec-label" style="margin-bottom:8px">🤖 Riesgo sugerido por el sistema — CONFLICTIVIDAD ${sug.riesgo} (puntaje ${sug.score})</div>
+        ${sug.factores.map(f => `<div class="factor ${f.t}">${f.txt}${f.pts ? ` <span style="margin-left:auto;font-weight:700;white-space:nowrap">${f.pts>0?'+':''}${f.pts}</span>` : ''}</div>`).join('')}
+        <div class="sec-label" style="margin:12px 0 6px">Nivel de riesgo asignado (modificable)</div>
+        <div class="riesgo-sel">
+          <button class="riesgo-btn ${riesgoActual==='BAJO'?'sel-BAJO':''}"  onclick="setRiesgoManual('BAJO')">🟢 BAJO</button>
+          <button class="riesgo-btn ${riesgoActual==='MEDIO'?'sel-MEDIO':''}" onclick="setRiesgoManual('MEDIO')">🟡 MEDIO</button>
+          <button class="riesgo-btn ${riesgoActual==='ALTO'?'sel-ALTO':''}"  onclick="setRiesgoManual('ALTO')">🔴 ALTO</button>
+        </div>
+        ${d.riesgo && d.riesgo !== sug.riesgo ? `<div style="font-size:11px;color:#92400e;background:#fef3c7;border:1px solid #fcd34d;border-radius:8px;padding:6px 10px;margin-top:8px">✏️ Nivel modificado manualmente (el sistema sugería ${sug.riesgo}).</div>` : ''}
+      </div>
+
+      <div class="fc">
+        <div class="sec-label" style="margin-bottom:8px">Datos del encuentro para el cálculo</div>
+        <div class="fr fr3">
+          <div><div class="sec-label">Tipo de partido</div>
+            <select onchange="setAnCampo('tipoPartido', this.value)">
+              <option value="amistoso" ${d.tipoPartido==='amistoso'?'selected':''}>Amistoso</option>
+              <option value="regular" ${d.tipoPartido==='regular'?'selected':''}>Torneo regular</option>
+              <option value="clasico" ${d.tipoPartido==='clasico'?'selected':''}>Clásico</option>
+              <option value="definitorio" ${d.tipoPartido==='definitorio'?'selected':''}>Definitorio</option>
+            </select></div>
+          <div><div class="sec-label">Trascendencia deportiva</div>
+            <select onchange="setAnCampo('trascendencia', this.value)">
+              <option value="baja" ${d.trascendencia==='baja'?'selected':''}>Baja</option>
+              <option value="media" ${d.trascendencia==='media'?'selected':''}>Media</option>
+              <option value="alta" ${d.trascendencia==='alta'?'selected':''}>Alta</option>
+            </select></div>
+          <div><div class="sec-label">Parcialidad visitante</div>
+            <select onchange="setAnCampo('visitantePermitida', this.value==='SI')">
+              <option value="NO" ${!d.visitantePermitida?'selected':''}>Sin visitante</option>
+              <option value="SI" ${d.visitantePermitida?'selected':''}>Con visitante</option>
+            </select></div>
+        </div>
+      </div>
+
+      <div class="fc">
+        <div style="display:flex;align-items:center;gap:10px;margin-bottom:10px">
+          <div class="sec-label" style="margin:0">✅ Checklist de análisis (Protocolo 4-OPP-010-SOPE · 5.3.1)</div>
+          <div class="prog-bar"><div class="prog-fill" style="width:${pct}%;background:${pct===100?'#059669':pct>=50?'#f59e0b':'#dc2626'}"></div></div>
+          <span style="font-size:12px;font-weight:700;color:${pct===100?'#059669':'#6b7280'};white-space:nowrap">${hechos}/${CHECKLIST_TOTAL}</span>
+        </div>
+        ${faltan > 0 ? `<div style="font-size:11px;color:#92400e;background:#fef3c7;border:1px solid #fcd34d;border-radius:8px;padding:6px 10px;margin-bottom:10px">⚠️ Faltan <b>${faltan}</b> puntos del análisis para completar el checklist.</div>` : `<div style="font-size:11px;color:#065f46;background:#d1fae5;border:1px solid #6ee7b7;border-radius:8px;padding:6px 10px;margin-bottom:10px">✅ Checklist completo.</div>`}
+        ${checklistHtml}
+        <div class="btns-row no-print" style="margin-top:10px">
+          <button class="btn-sn" onclick="buscarNoticiasPartido('${p.local.replace(/'/g,"\\'")}','${p.visitante.replace(/'/g,"\\'")}')">📰 Buscar noticias del encuentro</button>
+          <button class="btn-sn" onclick="st.rivA='${p.local.replace(/'/g,"\\'")}';st.rivB='${p.visitante.replace(/'/g,"\\'")}';setTab('v')">⚔️ Ver rivalidad</button>
+        </div>
+      </div>
+
+      <div class="fc">
+        <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px;flex-wrap:wrap;gap:6px">
+          <div class="sec-label" style="margin:0">📝 Texto del informe (Club ${p.local})</div>
+          <button class="btn-mini" onclick="generarBorradorTexto()">✨ Generar borrador a partir de los factores</button>
+        </div>
+        <textarea id="an-texto" style="min-height:190px" placeholder="Espectáculo deportivo a celebrarse el ... frente a su par el ... Se gradúa el presente encuentro futbolístico como: CONFLICTIVIDAD ..." oninput="setAnTexto('analisis', this.value)">${esc(d.analisis)}</textarea>
+        <div class="fr fr2" style="margin-top:10px">
+          <div><div class="sec-label">Iniciales del analista</div>
+          <input type="text" id="an-iniciales" placeholder="Ej: L.N.M." value="${esc(d.iniciales)}" oninput="setAnTexto('iniciales', this.value)"></div>
+        </div>
+      </div>
+
+      <div class="btns-row no-print" style="margin-bottom:20px">
+        <button class="btn-sn" onclick="guardarInforme(false)">💾 Guardar borrador</button>
+        <button class="btn-main" onclick="guardarInforme(true)">✅ Finalizar informe</button>
+        ${d.infId ? `<button class="btn-mini" style="background:#fee2e2;border-color:#fca5a5;color:#7f1d1d" onclick="eliminarInforme('${d.infId}')">🗑</button>` : ''}
+      </div>`;
+  }
+
+  // ── Vista fixture / listado ───────────────────────────────────────────────────
+  anDraft = null;
+  const opcionesClubes = `<option value="">— Seleccionar —</option>` + CLUBES.map(c => `<option>${c}</option>`).join('');
+  const formHtml = st.formPartido ? `
+    <div class="fc" style="border:2px solid #0C447C">
+      <div class="sec-label" style="margin-bottom:10px">➕ Cargar partido al fixture</div>
+      <div class="fr fr2">
+        <div><div class="sec-label">Equipo local *</div><input list="dl-clubes" id="fx-local" placeholder="Ej: ALL BOYS"></div>
+        <div><div class="sec-label">Equipo visitante *</div><input list="dl-clubes" id="fx-visitante" placeholder="Ej: NUEVA CHICAGO"></div>
+      </div>
+      <datalist id="dl-clubes">${CLUBES.map(c=>`<option value="${c}">`).join('')}</datalist>
+      <div class="fr fr3">
+        <div><div class="sec-label">Fecha *</div><input type="date" id="fx-fecha"></div>
+        <div><div class="sec-label">Hora</div><input type="time" id="fx-hora"></div>
+        <div><div class="sec-label">Torneo</div><input type="text" id="fx-torneo" placeholder="Ej: Primera Nacional"></div>
+      </div>
+      <div class="fr fr1"><div><div class="sec-label">Estadio</div><input type="text" id="fx-estadio" placeholder="Ej: Islas Malvinas — Floresta"></div></div>
+      <div style="display:flex;gap:16px;margin-bottom:12px;flex-wrap:wrap">
+        <label style="display:flex;align-items:center;gap:7px;font-size:13px;cursor:pointer"><input type="checkbox" id="fx-visit" style="width:17px;height:17px;accent-color:#0C447C"> Con parcialidad visitante</label>
+        <label style="display:flex;align-items:center;gap:7px;font-size:13px;cursor:pointer"><input type="checkbox" id="fx-inter" style="width:17px;height:17px;accent-color:#0C447C"> 🌎 Encuentro internacional (equipo sudamericano)</label>
+      </div>
+      <div class="btns-row"><button class="btn-main" onclick="guardarPartido()">💾 Agregar al fixture</button><button class="btn-sn" onclick="cerrarFormPartido()">Cancelar</button></div>
+    </div>` : '';
+
+  const hoyISO = new Date().toISOString().slice(0,10);
+  let lista = fixture.slice();
+  const fins = informes.filter(i => i.estado === 'finalizado');
+  if (st.filtroInformes === 'pendientes') lista = lista.filter(p => { const i = informeDePartido(p.id); return !i || i.estado !== 'finalizado'; });
+  if (st.filtroInformes === 'finalizados') lista = lista.filter(p => informeDePartido(p.id)?.estado === 'finalizado');
+
+  const cards = lista.map(p => {
+    const inf = informeDePartido(p.id);
+    const sug = !inf ? sugerirRiesgo(p.local, p.visitante, { visitantePermitida: p.visitantePermitida, internacional: p.internacional }) : null;
+    const cls = inf ? (inf.riesgo||'').toLowerCase() : 'pendiente';
+    const pasado = p.fecha < hoyISO;
+    return `<div class="rc ${cls}">
+      <div style="display:flex;justify-content:space-between;align-items:flex-start;gap:8px;flex-wrap:wrap">
+        <div>
+          <div style="font-size:14px;font-weight:700">${p.local} <span style="color:#9ca3af;font-weight:400">vs</span> ${p.visitante}</div>
+          <div style="font-size:11.5px;color:#6b7280;margin-top:2px">📅 ${fmt(p.fecha)}${p.hora?' · '+p.hora+' hs':''}${p.torneo?' · '+esc(p.torneo):''}${p.visitantePermitida?' · 👥 con visitante':''}${p.internacional?' · 🌎':''}${pasado?' · <span style="color:#9ca3af">jugado</span>':''}</div>
+        </div>
+        <div style="display:flex;gap:6px;align-items:center;flex-wrap:wrap">
+          ${inf
+            ? `<span class="bdg bdg-${inf.riesgo}">${inf.riesgo}</span>${inf.estado!=='finalizado' ? `<span class="bdg bdg-gris">borrador ${inf.checklistHechos||0}/${CHECKLIST_TOTAL}</span>`:''}`
+            : `<span class="bdg bdg-outline-${sug.riesgo}" title="Sugerencia automática">sug: ${sug.riesgo}</span>`}
+          <button class="btn-mini" onclick="abrirAnalisis('${p.id}')">${inf ? (inf.estado==='finalizado'?'👁 Ver / editar':'✏️ Continuar') : '🔍 Analizar'}</button>
+          <button class="btn-mini" style="color:#9ca3af" onclick="eliminarPartido('${p.id}')">🗑</button>
+        </div>
+      </div>
+    </div>`;
+  }).join('');
+
+  return `
+    <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:12px;flex-wrap:wrap;gap:8px">
+      <div style="display:flex;gap:5px">
+        ${['pendientes','finalizados','todos'].map(f => `<button class="btn-mini" style="${st.filtroInformes===f?'background:#0C447C;color:#fff;border-color:#0C447C':''}" onclick="setFiltroInformes('${f}')">${f[0].toUpperCase()+f.slice(1)}</button>`).join('')}
+      </div>
+      <div style="display:flex;gap:6px">
+        <button class="btn-mini" style="background:#059669;color:#fff;border-color:#047857" onclick="generarConsolidado()">📄 Generar informe consolidado (${fins.length})</button>
+        <button class="btn-mini" style="background:#0C447C;color:#fff;border-color:#0C447C" onclick="abrirFormPartido()">➕ Cargar partido</button>
+      </div>
+    </div>
+    ${formHtml}
+    ${lista.length ? cards : `<div class="empty">📋 No hay partidos ${st.filtroInformes==='pendientes'?'pendientes de análisis':'en este filtro'}. Cargá el fixture con el botón ➕.</div>`}`;
+}
+
+// ═══════════════════════════════════════════════════════════════════════════════
+// TAB EQUIPOS — Historial y perfil
+// ═══════════════════════════════════════════════════════════════════════════════
+window.abrirEquipo = c => { st.equipoAbierto = c; render(); window.scrollTo(0,0); };
+window.cerrarEquipo = () => { st.equipoAbierto = null; render(); };
+window.guardarEquipo = async () => {
+  const c = st.equipoAbierto; if (!c) return;
+  await setDoc(doc(db,'air_equipos', c), {
+    interna: document.getElementById('eq-interna').checked,
+    internaDetalle: document.getElementById('eq-interna-det').value.trim(),
+    incidentesRecientes: document.getElementById('eq-incid').checked,
+    incidentesDetalle: document.getElementById('eq-incid-det').value.trim(),
+    referentes: document.getElementById('eq-refs').value.trim(),
+    notas: document.getElementById('eq-notas').value.trim(),
+    actualizado: serverTimestamp(),
+  }, { merge: true });
+  alert('✅ Perfil del equipo actualizado. El motor de riesgo ya lo tiene en cuenta.');
+};
+
+function renderTabEquipos() {
+  if (st.equipoAbierto) {
+    const c = st.equipoAbierto;
+    const e = equiposExtra[c] || {};
+    const hist = historialEquipo(c).sort((a,b)=>(b.fechaPartido||'').localeCompare(a.fechaPartido||''));
+    const riv = RIV[c];
+    const rads = radicalizados.filter(r => norm(r.club).includes(c.split(' ')[0]) || norm(r.club) === c);
+
+    const histHtml = hist.length ? hist.map(i => `
+      <div class="rc ${(i.riesgo||'').toLowerCase()}" style="padding:10px 14px">
+        <div style="display:flex;justify-content:space-between;align-items:center;gap:8px;flex-wrap:wrap">
+          <div>
+            <div style="font-size:13px;font-weight:600">${i.local} vs ${i.visitante}</div>
+            <div style="font-size:11px;color:#6b7280">📅 ${fmt(i.fechaPartido)}${i.torneo?' · '+esc(i.torneo):''} · ${i.estado==='finalizado'?'✅':'📝 borrador'}</div>
+          </div>
+          <span class="bdg bdg-${i.riesgo}">${i.riesgo}</span>
+        </div>
+        ${i.analisis ? `<div style="font-size:11.5px;color:#4b5563;margin-top:6px;line-height:1.45;max-height:60px;overflow:hidden">${esc(i.analisis).slice(0,220)}${i.analisis.length>220?'…':''}</div>`:''}
+      </div>`).join('') : `<div class="empty">Sin informes previos para este equipo. Cuando cargues el historial de los últimos 2 años, va a aparecer acá.</div>`;
+
+    return `
+      <button class="btn-mini" onclick="cerrarEquipo()" style="margin-bottom:12px">← Volver a equipos</button>
+      <div class="fc">
+        <div style="font-size:17px;font-weight:700;margin-bottom:4px">🏟️ ${c}</div>
+        ${riv ? `<div style="font-size:12px;color:#6b7280;line-height:1.7">
+          ${riv.max.length ? `<b style="color:#dc2626">Rivalidad máxima:</b> ${riv.max.join(' · ')}<br>` : ''}
+          ${riv.enem.length ? `<b style="color:#ea580c">Enemistad:</b> ${riv.enem.join(' · ')}<br>` : ''}
+          ${riv.conf.length ? `<b style="color:#d97706">Conflicto:</b> ${riv.conf.join(' · ')}<br>` : ''}
+          ${riv.ali.length ? `<b style="color:#0284c7">Alianzas / amistades:</b> ${riv.ali.join(' · ')}` : ''}
+        </div>` : '<div style="font-size:12px;color:#9ca3af">Sin datos de rivalidades cargados para este club.</div>'}
+      </div>
+
+      <div class="fc">
+        <div class="sec-label" style="margin-bottom:10px">🔺 Situación de la facción radicalizada (impacta en la sugerencia de riesgo)</div>
+        <label style="display:flex;align-items:center;gap:8px;font-size:13px;cursor:pointer;margin-bottom:8px">
+          <input type="checkbox" id="eq-interna" ${e.interna?'checked':''} style="width:17px;height:17px;accent-color:#dc2626"> Interna / disputa de poder vigente en la barra
+        </label>
+        <input type="text" id="eq-interna-det" placeholder="Detalle de la interna (facciones, referentes en disputa, zona)" value="${esc(e.internaDetalle||'')}" style="margin-bottom:12px">
+        <label style="display:flex;align-items:center;gap:8px;font-size:13px;cursor:pointer;margin-bottom:8px">
+          <input type="checkbox" id="eq-incid" ${e.incidentesRecientes?'checked':''} style="width:17px;height:17px;accent-color:#dc2626"> Incidentes recientes (últimos encuentros)
+        </label>
+        <input type="text" id="eq-incid-det" placeholder="Detalle de incidentes (permanencia frente al estadio, cánticos, peleas)" value="${esc(e.incidentesDetalle||'')}" style="margin-bottom:12px">
+        <div class="sec-label">Referentes / alias</div>
+        <input type="text" id="eq-refs" placeholder="Ej: PÉREZ Juan alias 'El Flaco' (referente actual); GÓMEZ Luis (desplazado)" value="${esc(e.referentes||'')}" style="margin-bottom:12px">
+        <div class="sec-label">Notas / observaciones</div>
+        <textarea id="eq-notas" placeholder="Puntos de reunión, modalidad de traslado habitual, tribunas, antecedentes...">${esc(e.notas||'')}</textarea>
+        <div class="btns-row"><button class="btn-main" onclick="guardarEquipo()">💾 Guardar perfil</button></div>
+      </div>
+
+      ${rads.length ? `<div class="fc" style="border-left:4px solid #dc2626">
+        <div class="sec-label" style="margin-bottom:8px">⚠️ Radicalizados registrados vinculados a este club (${rads.length})</div>
+        ${rads.slice(0,8).map(r => `<div style="font-size:12px;padding:4px 0;border-bottom:1px solid #f3f4f6">${esc(r.nombre)} ${r.admision==='SI'?'<span class="persona-tag" style="background:#dc2626;color:#fff">⛔ D. ADMISIÓN</span>':''} ${r.captura==='SI'?'<span class="persona-tag" style="background:#0284c7;color:#fff">🔵 CAPTURA</span>':''}</div>`).join('')}
+        ${rads.length>8?`<div style="font-size:11px;color:#6b7280;margin-top:6px">… y ${rads.length-8} más en la pestaña Radicalizados.</div>`:''}
+      </div>` : ''}
+
+      <div class="sec-label" style="margin:16px 0 8px">📚 Historial de informes de riesgo (${hist.length})</div>
+      ${histHtml}`;
+  }
+
+  // Listado de equipos con actividad
+  const conteo = {};
+  informes.forEach(i => [i.local, i.visitante].forEach(c => {
+    if (!c) return; const n = norm(c);
+    conteo[n] = conteo[n] || { total:0, ALTO:0, MEDIO:0, BAJO:0 };
+    conteo[n].total++; if (i.riesgo) conteo[n][i.riesgo]++;
+  }));
+  Object.keys(equiposExtra).forEach(c => { conteo[c] = conteo[c] || { total:0, ALTO:0, MEDIO:0, BAJO:0 }; });
+
+  const activos = Object.keys(conteo).sort((a,b) => conteo[b].ALTO - conteo[a].ALTO || conteo[b].total - conteo[a].total);
+  const activosHtml = activos.length ? activos.map(c => {
+    const k = conteo[c]; const e = equiposExtra[c] || {};
+    return `<div class="rc ${k.ALTO?'alto':k.MEDIO?'medio':'bajo'}" style="cursor:pointer" onclick="abrirEquipo('${c.replace(/'/g,"\\'")}')">
+      <div style="display:flex;justify-content:space-between;align-items:center;gap:8px;flex-wrap:wrap">
+        <div>
+          <div style="font-size:13.5px;font-weight:700">${c} ${e.interna?'<span class="persona-tag" style="background:#fee2e2;color:#7f1d1d;border:1px solid #fca5a5">🔺 interna</span>':''} ${e.incidentesRecientes?'<span class="persona-tag" style="background:#fef3c7;color:#92400e;border:1px solid #fcd34d">🚨 incidentes</span>':''}</div>
+          <div style="font-size:11px;color:#6b7280;margin-top:2px">${k.total} informe${k.total!==1?'s':''} registrado${k.total!==1?'s':''}</div>
+        </div>
+        <div style="display:flex;gap:5px">
+          ${k.ALTO?`<span class="bdg bdg-outline-ALTO">${k.ALTO} ALTO</span>`:''}
+          ${k.MEDIO?`<span class="bdg bdg-outline-MEDIO">${k.MEDIO} MEDIO</span>`:''}
+          ${k.BAJO?`<span class="bdg bdg-outline-BAJO">${k.BAJO} BAJO</span>`:''}
+        </div>
+      </div>
+    </div>`;
+  }).join('') : `<div class="empty">Todavía no hay equipos con informes. A medida que finalices informes (o cuando cargues el historial de 2 años), acá se arma el perfil de conflictividad de cada club.</div>`;
+
+  return `
+    <div class="fc">
+      <div class="sec-label" style="margin-bottom:6px">🔎 Abrir perfil de cualquier equipo</div>
+      <div class="search-bar">
+        <input list="dl-clubes2" id="eq-buscar" placeholder="Escribí el nombre del club...">
+        <button class="btn-mini" style="background:#0C447C;color:#fff;border-color:#0C447C;padding:8px 16px" onclick="const v=norm(document.getElementById('eq-buscar').value); if(v) abrirEquipo(v)">Abrir</button>
+      </div>
+      <datalist id="dl-clubes2">${CLUBES.map(c=>`<option value="${c}">`).join('')}</datalist>
+    </div>
+    <div class="sec-label" style="margin:14px 0 8px">Equipos con actividad registrada</div>
+    ${activosHtml}`;
+}
+
+// ═══════════════════════════════════════════════════════════════════════════════
+// TAB RIVALIDADES — Consulta de relación entre dos clubes
+// ═══════════════════════════════════════════════════════════════════════════════
+window.setRivA = v => { st.rivA = v; render(); };
+window.setRivB = v => { st.rivB = v; render(); };
+
+function renderTabRivalidades() {
+  const A = norm(st.rivA), B = norm(st.rivB);
+  let resultado = '';
+  if (A && B && A !== B) {
+    const rel = getRelacion(A, B);
+    const nv = rel ? NIVELES_REL[rel] : null;
+    const sug = sugerirRiesgo(A, B, {});
+    const cruces = [];
+    getAlianzas(A).forEach(ali => { if (esRival(ali,B)) cruces.push(`Barra de <b>${A}</b> aliada de <b>${norm(ali)}</b> → rival de <b>${B}</b>`); });
+    getAlianzas(B).forEach(ali => { if (esRival(ali,A)) cruces.push(`Barra de <b>${B}</b> aliada de <b>${norm(ali)}</b> → rival de <b>${A}</b>`); });
+    resultado = `
+      <div class="fc" style="text-align:center">
+        <div style="font-size:15px;font-weight:700;margin-bottom:10px">${A} <span style="color:#9ca3af">vs</span> ${B}</div>
+        <span class="rel-badge" style="background:${nv?nv.color:'#9ca3af'}">${nv ? nv.label : 'SIN RELACIÓN DIRECTA REGISTRADA'}</span>
+        ${nv ? `<div style="font-size:12px;color:#6b7280;margin-top:8px">${nv.desc}</div>` : ''}
+        ${cruces.length ? `<div style="margin-top:12px;text-align:left">${cruces.map(c=>`<div class="factor pos">🔗 ${c}</div>`).join('')}</div>` : ''}
+        <div style="margin-top:12px;font-size:12px;color:#374151">Sugerencia base del sistema para este cruce: <span class="bdg bdg-${sug.riesgo}">${sug.riesgo}</span> <span style="color:#9ca3af">(sin datos del encuentro)</span></div>
+      </div>`;
+  }
+  const fichas = [A, B].filter(Boolean).map(c => {
+    const r = RIV[c]; if (!r) return `<div class="fc"><b>${c}</b><div style="font-size:12px;color:#9ca3af;margin-top:4px">Sin datos cargados.</div></div>`;
+    const pill = (arr, color, bg) => arr.map(x=>`<span class="club-pill" style="border-color:${color};color:${color};background:${bg}">${x}</span>`).join('') || '<span style="font-size:11px;color:#9ca3af">—</span>';
+    return `<div class="fc">
+      <div style="font-size:14px;font-weight:700;margin-bottom:8px">${c}</div>
+      <div class="sec-label">Rivalidad máxima</div><div style="margin-bottom:8px">${pill(r.max,'#dc2626','#fef2f2')}</div>
+      <div class="sec-label">Enemistad</div><div style="margin-bottom:8px">${pill(r.enem,'#ea580c','#fff7ed')}</div>
+      <div class="sec-label">Conflicto</div><div style="margin-bottom:8px">${pill(r.conf,'#d97706','#fffbeb')}</div>
+      <div class="sec-label">Tensión</div><div style="margin-bottom:8px">${pill(r.tens,'#65a30d','#f7fee7')}</div>
+      <div class="sec-label">Respeto / buena relación</div><div style="margin-bottom:8px">${pill(r.resp,'#0284c7','#f0f9ff')}</div>
+      <div class="sec-label">Alianzas / amistades</div><div>${pill(r.ali,'#0284c7','#eff6ff')}</div>
+    </div>`;
+  }).join('');
+
+  return `
+    <div class="fc">
+      <div class="sec-label" style="margin-bottom:8px">⚔️ Consultar relación entre dos parcialidades</div>
+      <div class="fr fr2">
+        <div><div class="sec-label">Club A</div><input list="dl-clubes3" value="${esc(st.rivA)}" onchange="setRivA(this.value)" placeholder="Ej: DEFENSORES DE BELGRANO"></div>
+        <div><div class="sec-label">Club B</div><input list="dl-clubes3" value="${esc(st.rivB)}" onchange="setRivB(this.value)" placeholder="Ej: DEPORTIVO MORON"></div>
+      </div>
+      <datalist id="dl-clubes3">${CLUBES.map(c=>`<option value="${c}">`).join('')}</datalist>
+      <div style="font-size:11px;color:#9ca3af">Base: mapa de rivalidades entre barras del fútbol argentino (Primera, Nacional, B Metro, C y regionales) + alianzas y amistades. Los perfiles de equipo (pestaña Equipos) suman internas e incidentes recientes al cálculo.</div>
+    </div>
+    ${resultado}
+    ${fichas}`;
+}
+
+// ═══════════════════════════════════════════════════════════════════════════════
+// TAB NOTICIAS — Búsqueda unificada en varios medios (interfaz simple)
+// ═══════════════════════════════════════════════════════════════════════════════
+function googleNewsUrl(q){ return `https://news.google.com/rss/search?q=${encodeURIComponent(q)}&hl=es-419&gl=AR&ceid=AR:es`; }
+function redditSearchUrl(sub,q){ return `https://www.reddit.com/r/${sub}/search.rss?q=${encodeURIComponent(q)}&restrict_sr=on&sort=new&t=year`; }
+
+const KEYWORDS_DURAS = ['barra','hincha','radicaliz','faccion','violencia','incidente','disturbio','detenido','ultra','aguante','traslado','concentracion','banderazo','captura','admision','enfrentamiento','arresto','detencion','pelea','agresion','herido','tiroteo','pirotecnia'];
+
+// Presets de búsqueda rápida (un click, sin filtros)
+const PRESETS = [
+  'Violencia fútbol argentino incidentes',
+  'Barras bravas Argentina',
+  'Incidentes hinchas Primera Nacional',
+  'Derecho de admisión estadio Argentina',
+  'Hinchas Copa Libertadores Argentina incidentes',
+  'Hinchas Copa Sudamericana Buenos Aires',
+  'Barra brava interna disputa',
+  'Operativo policial cancha Buenos Aires',
+];
+
+let notResultados = [], notCargando = false, notQuery = '';
+
+async function fetchFeedXml(url, tipo) {
+  const proxied = `/.netlify/functions/rss-proxy?url=${encodeURIComponent(url)}`;
+  const intentos = [proxied, `https://api.allorigins.win/raw?url=${encodeURIComponent(url)}`];
+  for (const u of intentos) {
+    try {
+      const r = await fetch(u, { signal: AbortSignal.timeout(12000) });
+      if (!r.ok) continue;
+      return await r.text();
+    } catch(e) {}
+  }
+  return null;
+}
+function extraerTag(block, tag){ const m = block.match(new RegExp(`<${tag}[^>]*>([\\s\\S]*?)<\\/${tag}>`,'i')); return m ? m[1].replace(/<!\[CDATA\[|\]\]>/g,'').trim() : ''; }
+function parseItems(xml, fuente, esAtom) {
+  const items = []; if (!xml) return items;
+  const rx = esAtom ? /<entry>([\s\S]*?)<\/entry>/g : /<item>([\s\S]*?)<\/item>/g;
+  let m;
+  while ((m = rx.exec(xml)) !== null) {
+    const b = m[1];
+    let link = '';
+    if (esAtom) { const lm = b.match(/<link[^>]*href="([^"]+)"/i); link = lm ? lm[1] : extraerTag(b,'id'); }
+    else link = extraerTag(b,'link') || extraerTag(b,'guid');
+    const titulo = extraerTag(b,'title').replace(/<[^>]+>/g,'');
+    const fecha = extraerTag(b, esAtom?'updated':'pubDate') || extraerTag(b,'published');
+    const desc = (extraerTag(b,'description') || extraerTag(b,'content') || extraerTag(b,'summary')).replace(/<[^>]+>/g,'').slice(0,200);
+    if (titulo) items.push({ titulo, link, fecha, desc, fuente });
+  }
+  return items.slice(0, 25);
+}
+
+window.buscarNoticias = async (q) => {
+  q = (q ?? document.getElementById('not-q')?.value ?? '').trim();
+  if (!q) { alert('Escribí qué querés buscar.'); return; }
+  notQuery = q; notCargando = true; notResultados = []; render();
+  // Una sola búsqueda dispara consultas paralelas en varios medios y fuentes:
+  const fuentes = [
+    { f:'Google News',  url: googleNewsUrl(q), atom:false },
+    { f:'Olé',          url: googleNewsUrl(`site:ole.com.ar ${q}`), atom:false },
+    { f:'Infobae',      url: googleNewsUrl(`site:infobae.com ${q}`), atom:false },
+    { f:'TyC Sports',   url: googleNewsUrl(`site:tycsports.com ${q}`), atom:false },
+    { f:'Clarín',       url: googleNewsUrl(`site:clarin.com ${q}`), atom:false },
+    { f:'La Nación',    url: googleNewsUrl(`site:lanacion.com.ar ${q}`), atom:false },
+    { f:'Doble Amarilla', url: googleNewsUrl(`site:dobleamarilla.com.ar ${q}`), atom:false },
+    { f:'Reddit r/Argentina', url: redditSearchUrl('Argentina', q), atom:true },
+    { f:'Reddit r/futbol',    url: redditSearchUrl('futbol', q), atom:true },
+  ];
+  const res = await Promise.allSettled(fuentes.map(async s => parseItems(await fetchFeedXml(s.url), s.f, s.atom)));
+  const vistos = new Set(); const todos = [];
+  res.forEach(r => { if (r.status === 'fulfilled') r.value.forEach(n => {
+    const k = n.titulo.toLowerCase().slice(0,80);
+    if (!vistos.has(k)) { vistos.add(k); todos.push(n); }
+  });});
+  todos.forEach(n => { n.t = new Date(n.fecha).getTime() || 0; n.alta = KEYWORDS_DURAS.some(k => (n.titulo+' '+n.desc).toLowerCase().includes(k)); });
+  todos.sort((a,b) => (b.alta - a.alta) || (b.t - a.t));
+  notResultados = todos; notCargando = false; render();
+};
+window.buscarNoticiasPartido = (local, visitante) => {
+  st.tab = 'n'; setTab('n');
+  setTimeout(() => { document.getElementById('not-q').value = `${local} ${visitante} hinchas`; buscarNoticias(); }, 50);
+};
+
+function renderTabNoticias() {
+  const resultadosHtml = notCargando
+    ? `<div class="empty"><div class="spinner" style="margin:0 auto 10px"></div>Buscando "${esc(notQuery)}" en Google News, Olé, Infobae, TyC, Clarín, La Nación, Doble Amarilla y Reddit...</div>`
+    : notResultados.length
+      ? `<div style="font-size:12px;color:#6b7280;margin-bottom:8px">${notResultados.length} resultados para "<b>${esc(notQuery)}</b>" — ${notResultados.filter(n=>n.alta).length} de relevancia alta</div>` +
+        notResultados.map(n => `
+        <div class="noticia ${n.alta?'alta':''}">
+          <div class="nt"><a href="${n.link}" target="_blank" style="color:inherit;text-decoration:none">${esc(n.titulo)}</a></div>
+          ${n.desc ? `<div style="font-size:11.5px;color:#6b7280;margin-bottom:4px;line-height:1.4">${esc(n.desc)}</div>` : ''}
+          <div class="nm">
+            <span class="src-tag">${n.fuente}</span>
+            ${n.alta ? '<span class="src-tag" style="background:#fee2e2;color:#991b1b">🔴 relevancia alta</span>' : ''}
+            ${n.t ? `<span>${new Date(n.t).toLocaleDateString('es-AR',{day:'2-digit',month:'2-digit',year:'numeric'})}</span>` : ''}
+            <a href="${n.link}" target="_blank" style="margin-left:auto;font-size:11px;color:#0C447C">Abrir ↗</a>
+          </div>
+        </div>`).join('')
+      : notQuery ? `<div class="empty">Sin resultados para "${esc(notQuery)}". Probá con otros términos.</div>`
+      : `<div class="empty">🔍 Una sola búsqueda consulta en simultáneo Google News, medios deportivos (Olé, TyC, Doble Amarilla), medios nacionales (Infobae, Clarín, La Nación) y Reddit.<br><br>Enfocada en violencia en el fútbol argentino y sudamericano.</div>`;
+
+  return `
+    <div class="fc">
+      <div class="sec-label" style="margin-bottom:8px">📰 Búsqueda unificada de fuentes abiertas</div>
+      <div class="search-bar">
+        <input type="text" id="not-q" placeholder="Ej: incidentes All Boys, barra Morón interna, hinchas Colo Colo Buenos Aires..." value="${esc(notQuery)}" onkeydown="if(event.key==='Enter') buscarNoticias()">
+        <button class="btn-main" style="flex:0 0 auto;padding:8px 20px" onclick="buscarNoticias()">🔍 Buscar</button>
+      </div>
+      <div class="chips">
+        ${PRESETS.map(p => `<button class="chip" onclick="document.getElementById('not-q').value='${p}';buscarNoticias()">${p}</button>`).join('')}
+      </div>
+    </div>
+    ${resultadosHtml}`;
+}
+
+// ═══════════════════════════════════════════════════════════════════════════════
+// TAB RADICALIZADOS — CRUD sobre la colección existente (radicalizados_copa)
+// ═══════════════════════════════════════════════════════════════════════════════
+window.abrirFormR = () => { st.formR = true; st.formAdmision='NO'; st.formCaptura='NO'; render(); };
+window.cerrarFormR = () => { st.formR = false; render(); };
+window.setAdmisionForm = v => { st.formAdmision = v; render(); };
+window.setCapturaForm = v => { st.formCaptura = v; render(); };
+window.setBusquedaR = v => { st.busquedaR = v; render(); setTimeout(()=>{const i=document.getElementById('busquedaR-input'); if(i){i.focus(); i.setSelectionRange(i.value.length,i.value.length);}},0); };
+window.limpiarBusquedaR = () => { st.busquedaR=''; render(); };
+
+window.guardarRadicalizado = async () => {
+  const g = id => document.getElementById(id)?.value?.trim() || '';
+  const nombre = g('r-nombre');
+  if (!nombre) { alert('El nombre es obligatorio.'); return; }
+  await addDoc(collection(db,'radicalizados_copa'), {
+    nombre: nombre.toUpperCase(), dni: g('r-dni'), club: g('r-club').toUpperCase(),
+    resolucion: g('r-resol'), motivo: g('r-motivo'), obs: g('r-obs'),
+    admision: st.formAdmision, captura: st.formCaptura, ts: serverTimestamp()
+  });
+  st.formR = false; render();
+};
+window.eliminarRadicalizado = async id => { if (!confirm('¿Eliminar esta persona del registro?')) return; await deleteDoc(doc(db,'radicalizados_copa', id)); };
+window.editarRadCampo = async (id) => {
+  const r = radicalizados.find(x=>x.id===id); if(!r) return;
+  const nuevoObs = prompt('Observaciones / alias:', r.obs||''); if (nuevoObs === null) return;
+  await updateDoc(doc(db,'radicalizados_copa', id), { obs: nuevoObs });
+};
+window.toggleAdmisionR = async (id) => {
+  const r = radicalizados.find(x=>x.id===id); if(!r) return;
+  await updateDoc(doc(db,'radicalizados_copa', id), { admision: (r.admision==='SI'?'NO':'SI') });
+};
+
+window.importarExcelR = (input) => {
+  const file = input.files[0]; if (!file) return;
+  const cargar = () => {
+    const reader = new FileReader();
+    reader.onload = async e => {
+      try {
+        const wb = XLSX.read(new Uint8Array(e.target.result), { type:'array' });
+        const rows = XLSX.utils.sheet_to_json(wb.Sheets[wb.SheetNames[0]], { defval:'' });
+        const buscar = (row, claves) => { for (const k of Object.keys(row)) { const kn = norm(k); if (claves.some(c => kn.includes(c))) return String(row[k]).trim(); } return ''; };
+        const existentes = new Set(radicalizados.map(r => r.dni || norm(r.nombre)));
+        let nuevos = 0;
+        for (const row of rows) {
+          const nombre = buscar(row, ['NOMBRE','APELLIDO']); if (!nombre) continue;
+          const dni = buscar(row, ['DNI','DOCUMENTO']);
+          if (existentes.has(dni || norm(nombre))) continue;
+          await addDoc(collection(db,'radicalizados_copa'), {
+            nombre: nombre.toUpperCase(), dni,
+            club: buscar(row,['CLUB','BARRA','FACCION']).toUpperCase(),
+            resolucion: buscar(row,['RESOL','EXPEDIENTE']),
+            motivo: buscar(row,['MOTIVO']),
+            obs: buscar(row,['OBS','APODO','ALIAS']),
+            admision: /si|1|x/i.test(buscar(row,['ADMISION'])) ? 'SI':'NO',
+            captura: /si|1|x/i.test(buscar(row,['CAPTURA'])) ? 'SI':'NO',
+            ts: serverTimestamp()
+          });
+          existentes.add(dni || norm(nombre)); nuevos++;
+        }
+        alert(`✅ Importación finalizada: ${nuevos} personas nuevas (duplicados omitidos).`);
+      } catch(err) { alert('Error al leer el archivo: ' + err.message); }
+    };
+    reader.readAsArrayBuffer(file);
+  };
+  if (typeof XLSX === 'undefined') { const s = document.createElement('script'); s.src='https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js'; s.onload = cargar; document.head.appendChild(s); }
+  else cargar();
+  input.value = '';
+};
+
+function renderTabRadicalizados() {
+  const busq = norm(st.busquedaR);
+  const lista = radicalizados.filter(r => !busq || [r.nombre,r.dni,r.club,r.motivo,r.obs].some(x => norm(x).includes(busq)));
+  const conAdm = radicalizados.filter(r => r.admision==='SI').length;
+  const conCap = radicalizados.filter(r => r.captura==='SI').length;
+  const h = t => busq && t ? esc(t).replace(new RegExp(`(${st.busquedaR.replace(/[.*+?^${}()|[\]\\]/g,'\\$&')})`,'gi'),'<mark class="search-highlight">$1</mark>') : esc(t||'');
+
+  const formHtml = st.formR ? `
+    <div class="fc" style="border:2px solid #ef4444">
+      <div style="font-size:13px;font-weight:700;color:#7f1d1d;margin-bottom:12px">🚫 Registrar persona radicalizada / barra</div>
+      <div class="fr fr2">
+        <div><div class="sec-label">Apellido y nombre *</div><input type="text" id="r-nombre" placeholder="Ej: GARCÍA, Juan Carlos"></div>
+        <div><div class="sec-label">DNI / Documento</div><input type="text" id="r-dni" placeholder="Ej: 28456789"></div>
+      </div>
+      <div class="fr fr2">
+        <div><div class="sec-label">🏴 Club / Barra</div><input list="dl-clubes4" id="r-club" placeholder="Ej: NUEVA CHICAGO"></div>
+        <div><div class="sec-label">N° Resolución / Expediente</div><input type="text" id="r-resol" placeholder="Ej: Res. 123/2026"></div>
+      </div>
+      <datalist id="dl-clubes4">${CLUBES.map(c=>`<option value="${c}">`).join('')}</datalist>
+      <div class="fr fr2">
+        <div><div class="sec-label" style="margin-bottom:6px">⛔ Derecho de Admisión</div>
+          <div style="display:flex;gap:6px">
+            <button onclick="setAdmisionForm('SI')" style="flex:1;padding:9px;border-radius:8px;border:1px solid ${st.formAdmision==='SI'?'#991b1b':'#fca5a5'};background:${st.formAdmision==='SI'?'#dc2626':'#fee2e2'};color:${st.formAdmision==='SI'?'#fff':'#7f1d1d'};font-weight:700;cursor:pointer;font-size:12px">⛔ SÍ</button>
+            <button onclick="setAdmisionForm('NO')" style="flex:1;padding:9px;border-radius:8px;border:1px solid #e5e7eb;background:${st.formAdmision==='NO'?'#059669':'#f9fafb'};color:${st.formAdmision==='NO'?'#fff':'#374151'};cursor:pointer;font-size:12px">✔ NO</button>
+          </div></div>
+        <div><div class="sec-label" style="margin-bottom:6px">🔵 Orden de captura</div>
+          <label style="display:flex;align-items:center;gap:8px;cursor:pointer;padding:9px;border:1px solid ${st.formCaptura==='SI'?'#0284c7':'#e5e7eb'};border-radius:8px;background:${st.formCaptura==='SI'?'#e0f2fe':'#f9fafb'};font-size:12px">
+            <input type="checkbox" onchange="setCapturaForm(this.checked?'SI':'NO')" ${st.formCaptura==='SI'?'checked':''} style="width:16px;height:16px;accent-color:#0284c7"> Captura vigente
+          </label></div>
+      </div>
+      <div class="fr fr1"><div><div class="sec-label">Motivo</div><input type="text" id="r-motivo" placeholder="Ej: Incidentes frente a la Policía 29/07/2023"></div></div>
+      <div class="fr fr1"><div><div class="sec-label">Observaciones / alias</div><textarea id="r-obs" placeholder="Alias, facción, zona, antecedentes..."></textarea></div></div>
+      <div class="btns-row"><button class="btn-main" onclick="guardarRadicalizado()">💾 Guardar</button><button class="btn-sn" onclick="cerrarFormR()">Cancelar</button></div>
+    </div>` : '';
+
+  return `
+    <div class="stat-row">
+      <div class="sb"><div class="sn">${radicalizados.length}</div><div class="sl">Registrados</div></div>
+      <div class="sb riesgo-alto"><div class="sn">${conAdm}</div><div class="sl">⛔ D. Admisión</div></div>
+      <div class="sb"><div class="sn" style="color:#0284c7">${conCap}</div><div class="sl">🔵 Capturas</div></div>
+      <div class="sb"><div class="sn">${new Set(radicalizados.map(r=>norm(r.club)).filter(Boolean)).size}</div><div class="sl">Clubes / barras</div></div>
+    </div>
+    <div style="display:flex;gap:6px;margin-bottom:12px;flex-wrap:wrap" class="no-print">
+      <button class="btn-mini" style="background:#dc2626;color:#fff;border-color:#991b1b" onclick="abrirFormR()">➕ Registrar persona</button>
+      <label class="btn-mini" style="cursor:pointer">📥 Importar Excel<input type="file" accept=".xlsx,.xls,.csv" onchange="importarExcelR(this)" style="display:none"></label>
+    </div>
+    ${formHtml}
+    <div class="search-bar" style="margin-bottom:12px">
+      <input type="text" id="busquedaR-input" placeholder="🔍 Buscar por nombre, DNI, club o motivo..." value="${esc(st.busquedaR)}" oninput="setBusquedaR(this.value)">
+      ${st.busquedaR?`<button class="btn-mini" onclick="limpiarBusquedaR()">✕</button>`:''}
+    </div>
+    ${lista.length ? lista.map(r => {
+      const admSI = r.admision==='SI', capSI = r.captura==='SI';
+      const bc = admSI?'#dc2626':capSI?'#0284c7':'#9ca3af';
+      return `<div class="persona-card" style="border-left:4px solid ${bc}">
+        <div class="persona-avatar" style="background:${admSI?'#fee2e2':capSI?'#e0f2fe':'#f3f4f6'};border-color:${bc}">${admSI?'⛔':capSI?'🔵':'👤'}</div>
+        <div class="persona-info">
+          <div class="persona-nombre" style="color:${admSI?'#991b1b':'#111'}">${h(r.nombre)}</div>
+          <div class="persona-meta">
+            ${r.dni?`<span class="persona-tag tag-dni">DNI ${h(r.dni)}</span>`:''}
+            ${r.club?`<span class="persona-tag" style="background:#eff6ff;color:#1e40af;border:1px solid #bfdbfe">🏴 ${h(r.club)}</span>`:''}
+            ${admSI?`<span class="persona-tag" style="background:#dc2626;color:#fff;font-weight:700">⛔ D. ADMISIÓN</span>`:''}
+            ${capSI?`<span class="persona-tag" style="background:#0284c7;color:#fff;font-weight:700">🔵 CAPTURA</span>`:''}
+            ${r.resolucion?`<span class="persona-tag tag-dni">📄 ${h(r.resolucion)}</span>`:''}
+          </div>
+          ${r.motivo?`<div style="font-size:12px;color:#374151;margin-bottom:3px"><b>Motivo:</b> ${h(r.motivo)}</div>`:''}
+          ${r.obs?`<div style="font-size:11px;color:#6b7280;margin-bottom:4px">${h(r.obs)}</div>`:''}
+          <div style="display:flex;gap:5px;flex-wrap:wrap" class="no-print">
+            <button class="btn-mini" onclick="toggleAdmisionR('${r.id}')">${admSI?'Quitar':'Marcar'} D. Admisión</button>
+            <button class="btn-mini" onclick="editarRadCampo('${r.id}')">✏️ Obs.</button>
+            <button class="btn-mini" onclick="document.getElementById('not-q')&&0;st.tab='n';setTab('n');setTimeout(()=>{document.getElementById('not-q').value='${(r.nombre||'').replace(/'/g,"\\'")}';buscarNoticias()},50)">📰 En noticias</button>
+            <button class="btn-mini" style="color:#7f1d1d" onclick="eliminarRadicalizado('${r.id}')">🗑</button>
+          </div>
+        </div>
+      </div>`;
+    }).join('') : `<div class="empty">${radicalizados.length? '🔍 Sin resultados para la búsqueda.' : '📋 No hay personas registradas. Agregá manualmente o importá desde Excel.'}</div>`}`;
+}
+
+// ═══════════════════════════════════════════════════════════════════════════════
+// TAB INICIO — Dashboard
+// ═══════════════════════════════════════════════════════════════════════════════
+function renderTabInicio() {
+  const hoyISO = new Date().toISOString().slice(0,10);
+  const en7 = new Date(Date.now()+7*864e5).toISOString().slice(0,10);
+  const proximos = fixture.filter(p => p.fecha >= hoyISO && p.fecha <= en7);
+  const pendientes = fixture.filter(p => { const i = informeDePartido(p.id); return p.fecha >= hoyISO && (!i || i.estado !== 'finalizado'); });
+  const fins = informes.filter(i => i.estado === 'finalizado');
+  const porRiesgo = r => fins.filter(i => i.riesgo === r).length;
+
+  const proximosHtml = proximos.length ? proximos.map(p => {
+    const inf = informeDePartido(p.id);
+    const sug = !inf ? sugerirRiesgo(p.local, p.visitante, { visitantePermitida:p.visitantePermitida, internacional:p.internacional }) : null;
+    const r = inf ? inf.riesgo : sug.riesgo;
+    return `<div class="rc ${(r||'').toLowerCase()}" style="cursor:pointer;padding:10px 14px" onclick="setTab('i');abrirAnalisis('${p.id}')">
+      <div style="display:flex;justify-content:space-between;align-items:center;gap:8px;flex-wrap:wrap">
+        <div>
+          <div style="font-size:13px;font-weight:700">${p.local} vs ${p.visitante}</div>
+          <div style="font-size:11px;color:#6b7280">📅 ${fmt(p.fecha)}${p.hora?' · '+p.hora+' hs':''}</div>
+        </div>
+        <div style="display:flex;gap:5px;align-items:center">
+          ${inf ? `<span class="bdg bdg-${r}">${r}</span>` : `<span class="bdg bdg-outline-${r}">sug: ${r}</span><span class="bdg bdg-gris">sin informe</span>`}
+        </div>
+      </div>
+    </div>`;
+  }).join('') : `<div class="empty">No hay partidos cargados para los próximos 7 días.</div>`;
+
+  const internas = Object.entries(equiposExtra).filter(([c,e]) => e.interna);
+
+  return `
+    <div class="stat-row">
+      <div class="sb"><div class="sn">${pendientes.length}</div><div class="sl">Informes pendientes</div></div>
+      <div class="sb riesgo-alto"><div class="sn">${porRiesgo('ALTO')}</div><div class="sl">Conflictividad ALTA</div></div>
+      <div class="sb riesgo-medio"><div class="sn">${porRiesgo('MEDIO')}</div><div class="sl">Conflictividad MEDIA</div></div>
+      <div class="sb riesgo-bajo"><div class="sn">${porRiesgo('BAJO')}</div><div class="sl">Conflictividad BAJA</div></div>
+    </div>
+    ${internas.length ? `<div class="fc" style="border-left:4px solid #dc2626">
+      <div class="sec-label" style="margin-bottom:6px">🔺 Alertas activas — internas en facciones radicalizadas</div>
+      ${internas.map(([c,e]) => `<div class="factor pos" style="cursor:pointer" onclick="setTab('e');abrirEquipo('${c.replace(/'/g,"\\'")}')">🔺 <b>${c}</b>${e.internaDetalle?': '+esc(e.internaDetalle):''}</div>`).join('')}
+    </div>` : ''}
+    <div class="sec-label" style="margin:14px 0 8px">📅 Próximos 7 días</div>
+    ${proximosHtml}
+    <div class="btns-row no-print" style="margin-top:14px">
+      <button class="btn-main" onclick="setTab('i')">📋 Ir a Informes de Riesgo</button>
+      <button class="btn-sn" onclick="setTab('n')">📰 Buscar noticias</button>
+    </div>`;
+}
+
+// ═══════════════════════════════════════════════════════════════════════════════
+// RENDER PRINCIPAL
+// ═══════════════════════════════════════════════════════════════════════════════
+function render() {
+  const c = document.getElementById('content-area'); if (!c || !st.perfilActual) return;
+  const activeEl = document.activeElement; const activeId = activeEl?.id; const selStart = activeEl?.selectionStart;
+  switch (st.tab) {
+    case 'h': c.innerHTML = renderTabInicio(); break;
+    case 'i': c.innerHTML = renderTabInformes(); break;
+    case 'e': c.innerHTML = renderTabEquipos(); break;
+    case 'v': c.innerHTML = renderTabRivalidades(); break;
+    case 'r': c.innerHTML = renderTabRadicalizados(); break;
+    case 'n': c.innerHTML = renderTabNoticias(); break;
+  }
+  if (activeId) { const el = document.getElementById(activeId); if (el && el.tagName !== 'BUTTON') { el.focus(); try{ el.setSelectionRange(selStart, selStart); }catch(e){} } }
+}
+window.st = st; window.abrirAnalisis = window.abrirAnalisis; // export para onclick inline
+</script>
+</body>
+</html>

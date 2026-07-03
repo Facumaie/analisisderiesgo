@@ -1,0 +1,9 @@
+{
+  "name": "analisis-informes-riesgo-dsed",
+  "version": "1.0.0",
+  "private": true,
+  "description": "Análisis de Informes de Riesgo - Departamento Seguridad en Eventos Deportivos (DPEM)",
+  "dependencies": {
+    "@netlify/blobs": "^8.1.0"
+  }
+}
