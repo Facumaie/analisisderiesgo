@@ -2,13 +2,13 @@
   functions = "netlify/functions"
   publish = "."
 
+[build.environment]
+  # La apiKey web de Firebase es pública por diseño (no es un secreto);
+  # se omite del secrets scanning de Netlify para que no bloquee el deploy.
+  SECRETS_SCAN_SMART_DETECTION_OMIT_VALUES = "AIzaSyBCaMF3aUlEBxfKZLDCyksGwSgNsWUGHt0"
+
 [[headers]]
   for = "/.netlify/functions/*"
   [headers.values]
     Access-Control-Allow-Origin = "*"
     Access-Control-Allow-Methods = "GET, POST, OPTIONS"
-
-# Cron de alertas Telegram.
-# Netlify ejecuta los crons en UTC: ARG 08-20 cada 2 hs -> UTC 11-23.
-[functions."check-noticias-cron"]
-  schedule = "0 11,13,15,17,19,21,23 * * *"

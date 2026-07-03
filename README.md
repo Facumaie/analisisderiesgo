@@ -7,12 +7,10 @@ de informes de análisis de riesgo de espectáculos futbolísticos.
 
 ```
 ├── index.html                      # App completa (single-file)
-├── netlify.toml                    # Config Netlify (functions + cron)
-├── package.json                    # Dependencia @netlify/blobs (cron)
+├── netlify.toml                    # Config Netlify (functions)
 └── netlify/functions/
     ├── rss-proxy.js                # Proxy RSS para el buscador de noticias
-    ├── claude-proxy.js             # Proxy API Claude
-    └── check-noticias-cron.js      # Alertas automáticas a Telegram
+    └── claude-proxy.js             # Proxy API Claude
 ```
 
 ## Deploy
