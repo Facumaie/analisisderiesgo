@@ -414,6 +414,68 @@ const NIVELES_REL = {
 function norm(s){ return (s||'').toUpperCase().normalize('NFD').replace(/[\u0300-\u036f]/g,'').replace(/\s+/g,' ').trim(); }
 const CLUBES = Object.keys(RIV).sort();
 
+// ═══════════════════════════════════════════════════════════════════════════════
+// VALIDADOR DE CLUBES — alias/apodos + sugerencia por similitud
+// Evita "clubes fantasma" que no cruzan con rivalidades ni antecedentes.
+// ═══════════════════════════════════════════════════════════════════════════════
+const ALIAS_CLUBES = {
+  'BOCA':'BOCA JUNIORS','RIVER':'RIVER PLATE','RACING':'RACING CLUB','INDEP':'INDEPENDIENTE','ROJO':'INDEPENDIENTE',
+  'VELEZ':'VELEZ SARSFIELD','ESTUDIANTES':'ESTUDIANTES (LP)','GIMNASIA':'GIMNASIA (LP)','NEWELLS':'NEWELLS OLD BOYS',
+  'NOB':'NEWELLS OLD BOYS','CANALLA':'ROSARIO CENTRAL','TALLERES':'TALLERES (CBA)','BELGRANO':'BELGRANO (CBA)',
+  'INSTITUTO':'INSTITUTO (CBA)','UNION':'UNION (SF)','ARGENTINOS':'ARGENTINOS JUNIORS','BICHO':'ARGENTINOS JUNIORS',
+  'ALBO':'ALL BOYS','CHICAGO':'NUEVA CHICAGO','CHACA':'CHACARITA JUNIORS','CHACARITA':'CHACARITA JUNIORS',
+  'FERRO':'FERRO CARRIL OESTE','MORON':'DEPORTIVO MORON','GALLO':'DEPORTIVO MORON','CALAMAR':'PLATENSE',
+  'DEFE':'DEFENSORES DE BELGRANO','DEFENSORES':'DEFENSORES DE BELGRANO','DRAGON':'DEFENSORES DE BELGRANO',
+  'EXCURSIO':'EXCURSIONISTAS','VILLERO':'EXCURSIONISTAS','RIESTRA':'DEPORTIVO RIESTRA','SACA':'SACACHISPAS',
+  'LILA':'SACACHISPAS','LAMADRID':'GENERAL LAMADRID','CARCELERO':'GENERAL LAMADRID','COMU':'COMUNICACIONES',
+  'CARTERO':'COMUNICACIONES','ESPANOL':'DEPORTIVO ESPAÑOL','GALLEGO':'DEPORTIVO ESPAÑOL','ITALIANO':'SPORTIVO ITALIANO',
+  'TANO':'SPORTIVO ITALIANO','BARRACAS':'BARRACAS CENTRAL','GUAPO':'BARRACAS CENTRAL','ALMIRANTE':'ALMIRANTE BROWN',
+  'MIRASOL':'ALMIRANTE BROWN','MERLO':'DEPORTIVO MERLO','ARMENIO':'DEPORTIVO ARMENIO','DOCK':'DOCK SUD',
+  'LAFE':'LAFERRERE','DEPORTIVO LAFERRERE':'LAFERRERE','CANUELAS':'CAÑUELAS FC','URQUIZA':'J.J. URQUIZA',
+  'PARAGUAYO':'DEPORTIVO PARAGUAYO','PORVENIR':'EL PORVENIR','ALEM':'LEANDRO N. ALEM','CAMBACERES':'DEFENSORES DE CAMBACERES',
+  'ARGENTINO Q':'ARGENTINO DE QUILMES','MATE':'ARGENTINO DE QUILMES','CENTRAL CORDOBA':'CENTRAL CORDOBA (SDE)',
+  'ATLETICO TUCUMAN':'ATLETICO TUCUMAN','DEFENSA':'DEFENSA Y JUSTICIA','HALCON':'DEFENSA Y JUSTICIA',
+};
+// Nombres buscables (clubes + alias), de más largo a más corto, para detección en texto libre
+const BUSCABLES = [...CLUBES, ...Object.keys(ALIAS_CLUBES)].sort((a,b) => b.length - a.length);
+
+function lev(a, b) {
+  const m = a.length, n = b.length;
+  if (!m) return n; if (!n) return m;
+  let prev = Array.from({length:n+1}, (_,j) => j);
+  for (let i = 1; i <= m; i++) {
+    const cur = [i];
+    for (let j = 1; j <= n; j++) cur[j] = Math.min(prev[j]+1, cur[j-1]+1, prev[j-1] + (a[i-1]===b[j-1]?0:1));
+    prev = cur;
+  }
+  return prev[n];
+}
+function mejorSugerencia(n) {
+  let mejor = null, md = Infinity;
+  for (const c of CLUBES) { const d = lev(n, c); if (d < md) { md = d; mejor = c; } }
+  return md <= Math.max(2, Math.floor(n.length * 0.4)) ? mejor : null;
+}
+// Resuelve un texto libre a un club de la base: exacto → alias → contenido único → desconocido (con sugerencia)
+function resolverClub(txt) {
+  const n = norm(txt);
+  if (!n) return { club:'', estado:'vacio' };
+  if (RIV[n]) return { club:n, estado:'ok' };
+  if (ALIAS_CLUBES[n]) return { club:ALIAS_CLUBES[n], estado:'alias' };
+  const cand = CLUBES.filter(c => c.includes(n) || n.includes(c));
+  if (cand.length === 1) return { club:cand[0], estado:'alias' };
+  return { club:n, estado:'desconocido', sugerencia: mejorSugerencia(n) };
+}
+// Versión interactiva para formularios: corrige solo, pregunta si hay dudas, null = cancelar
+function validarClubInteractivo(txt, campo) {
+  const r = resolverClub(txt);
+  if (r.estado === 'ok') return r.club;
+  if (r.estado === 'alias') return r.club;
+  if (r.sugerencia) {
+    return confirm(`⚠️ "${norm(txt)}" (${campo}) no está en la base de rivalidades.\n\n¿Quisiste decir "${r.sugerencia}"?\n\nAceptar: usar ${r.sugerencia}\nCancelar: guardar "${norm(txt)}" tal cual (no va a cruzar rivalidades ni antecedentes)`) ? r.sugerencia : r.club;
+  }
+  return confirm(`⚠️ "${norm(txt)}" (${campo}) no está en la base de rivalidades y no encontré ninguno parecido.\n\n¿Guardarlo igual? No va a cruzar rivalidades, alianzas ni antecedentes en el motor de riesgo.`) ? r.club : null;
+}
+
 // Relaciones personalizadas cargadas desde la app (colección air_rivalidades).
 // Pisan a la base RIV y pueden llevar una reseña con el historial de hechos.
 let rivCustom = {};
@@ -507,6 +569,9 @@ function conectarFirebase() {
   unsubs.push(onSnapshot(query(collection(db,'air_antecedentes'), orderBy('fecha','desc')), snap => {
     antecedentes = snap.docs.map(d => ({ id: d.id, ...d.data() })); render();
   }));
+  unsubs.push(onSnapshot(query(collection(db,'air_papelera'), orderBy('eliminadoEn','desc')), snap => {
+    papelera = snap.docs.map(d => ({ id: d.id, ...d.data() })); render();
+  }));
   unsubs.push(onSnapshot(collection(db,'air_rivalidades'), snap => {
     rivCustom = {}; snap.docs.forEach(d => rivCustom[d.id] = { id: d.id, ...d.data() }); render();
   }));
@@ -564,6 +629,57 @@ const esc = s => (s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g
 const DIAS = ['domingo','lunes','martes','miércoles','jueves','viernes','sábado'];
 const MESES = ['enero','febrero','marzo','abril','mayo','junio','julio','agosto','septiembre','octubre','noviembre','diciembre'];
 function fechaLarga(iso){ if(!iso) return '—'; const d = new Date(iso+'T12:00:00'); return `día ${DIAS[d.getDay()]} ${d.getDate()} de ${MESES[d.getMonth()]} del ${d.getFullYear()}`; }
+
+// ═══════════════════════════════════════════════════════════════════════════════
+// PAPELERA — todo borrado pasa por acá: se puede deshacer al instante (toast)
+// o restaurar después desde la pestaña Usuarios (admin). Conserva el ID original,
+// así los vínculos (informe ↔ partido, etc.) quedan intactos al restaurar.
+// ═══════════════════════════════════════════════════════════════════════════════
+let papelera = [];
+const COL_LABEL = { air_fixture:'Partido', air_informes:'Informe de riesgo', air_antecedentes:'Antecedente', air_partes:'Parte U.C.O.', radicalizados_copa:'Radicalizado' };
+// Convierte Timestamps a Date para que sobrevivan el viaje a la papelera y vuelvan como Timestamps
+function limpiarTs(o){ const r = {}; for (const [k,v] of Object.entries(o||{})) r[k] = (v && typeof v.toDate === 'function') ? v.toDate() : v; return r; }
+
+async function borrarConPapelera(col, id, etiqueta) {
+  try {
+    const ref = doc(db, col, id);
+    const snap = await getDoc(ref);
+    if (!snap.exists()) return;
+    const pid = `${col}__${id}`;
+    await setDoc(doc(db,'air_papelera', pid), {
+      col, docId: id, data: limpiarTs(snap.data()),
+      etiqueta: etiqueta || COL_LABEL[col] || col,
+      eliminadoEn: serverTimestamp(), por: currentUser?.id || '',
+    });
+    await deleteDoc(ref);
+    mostrarUndo(pid, etiqueta || COL_LABEL[col] || 'Elemento');
+  } catch(e) { alert('No se pudo eliminar: ' + e.message); }
+}
+function mostrarUndo(pid, etiqueta) {
+  document.getElementById('undo-toast')?.remove();
+  const t = document.createElement('div');
+  t.id = 'undo-toast';
+  t.style.cssText = 'position:fixed;bottom:18px;left:50%;transform:translateX(-50%);background:#111827;color:#fff;padding:10px 16px;border-radius:12px;font-size:13px;display:flex;gap:12px;align-items:center;z-index:9999;box-shadow:0 6px 20px rgba(0,0,0,.35);max-width:92vw';
+  t.innerHTML = `🗑 ${esc(etiqueta)} eliminado <button style="background:#fbbf24;border:none;color:#111827;font-weight:700;padding:5px 14px;border-radius:8px;cursor:pointer;white-space:nowrap" onclick="restaurarPapelera('${pid}');this.parentElement.remove()">↩️ Deshacer</button>`;
+  document.body.appendChild(t);
+  setTimeout(() => t.remove(), 10000);
+}
+window.restaurarPapelera = async pid => {
+  const snap = await getDoc(doc(db,'air_papelera', pid));
+  if (!snap.exists()) { alert('Este elemento ya no está disponible para restaurar.'); return; }
+  const pd = snap.data();
+  await setDoc(doc(db, pd.col, pd.docId), pd.data);
+  await deleteDoc(doc(db,'air_papelera', pid));
+};
+window.purgarPapelera = async pid => {
+  if (!confirm('¿Eliminar DEFINITIVAMENTE este elemento de la papelera? No se puede deshacer.')) return;
+  await deleteDoc(doc(db,'air_papelera', pid));
+};
+window.vaciarPapelera = async () => {
+  if (!papelera.length) return;
+  if (!confirm(`¿Vaciar la papelera completa (${papelera.length} elemento${papelera.length!==1?'s':''})? Es DEFINITIVO.`)) return;
+  for (const p of papelera) await deleteDoc(doc(db,'air_papelera', p.id));
+};
 
 // ═══════════════════════════════════════════════════════════════════════════════
 // MOTOR DE SUGERENCIA DE RIESGO
@@ -723,10 +839,20 @@ window.setFiltroInformes = f => { st.filtroInformes = f; render(); };
 
 window.guardarPartido = async () => {
   const g = id => document.getElementById(id)?.value?.trim() || '';
-  const local = g('fx-local'), visitante = g('fx-visitante'), fecha = g('fx-fecha');
-  if (!local || !visitante || !fecha) { alert('Completá local, visitante y fecha.'); return; }
+  const localTxt = g('fx-local'), visitanteTxt = g('fx-visitante'), fecha = g('fx-fecha');
+  if (!localTxt || !visitanteTxt || !fecha) { alert('Completá local, visitante y fecha.'); return; }
+  // Validación de clubes: corrige alias solo, sugiere si hay error de tipeo
+  const local = validarClubInteractivo(localTxt, 'local');
+  if (local === null) return;
+  const visitante = validarClubInteractivo(visitanteTxt, 'visitante');
+  if (visitante === null) return;
+  if (local === visitante) { alert('⚠️ Local y visitante no pueden ser el mismo club.'); return; }
+  // Aviso de duplicados: mismo cruce y fecha ya cargado
+  if (fixture.some(p => norm(p.local) === local && norm(p.visitante) === visitante && p.fecha === fecha)) {
+    alert(`⚠️ ${local} vs ${visitante} del ${fmt(fecha)} ya está cargado en el fixture. No se duplicó.`); return;
+  }
   await addDoc(collection(db,'air_fixture'), {
-    local: norm(local), visitante: norm(visitante), fecha,
+    local, visitante, fecha,
     hora: g('fx-hora'), estadio: g('fx-estadio'), torneo: g('fx-torneo'),
     visitantePermitida: document.getElementById('fx-visit').checked,
     internacional: document.getElementById('fx-inter').checked,
@@ -735,12 +861,148 @@ window.guardarPartido = async () => {
   st.formPartido = false; render();
 };
 window.eliminarPartido = async id => {
-  const inf = informes.find(i => i.partidoId === id);
-  if (!confirm('¿Eliminar este partido del fixture?' + (inf ? '\n(El informe asociado NO se elimina)' : ''))) return;
-  await deleteDoc(doc(db,'air_fixture', id));
+  const p = fixture.find(x => x.id === id);
+  await borrarConPapelera('air_fixture', id, p ? `Partido ${p.local} vs ${p.visitante}` : 'Partido');
 };
 
 function informeDePartido(pid) { return informes.find(i => i.partidoId === pid); }
+
+// ═══════════════════════════════════════════════════════════════════════════════
+// PEGADO INTELIGENTE DE FIXTURE — pegás la programación cruda (WhatsApp, Excel,
+// mail) y la app detecta partidos, fechas y horas. Vista previa editable antes
+// de cargar; omite duplicados automáticamente.
+// ═══════════════════════════════════════════════════════════════════════════════
+let fxDraft = null, fxPegando = false;
+window.abrirPegarFixture = () => { fxPegando = true; fxDraft = null; render(); };
+window.cerrarPegarFixture = () => { fxPegando = false; fxDraft = null; render(); };
+
+// Detecta clubes conocidos (base + alias) en un texto, de nombre más largo a más corto
+function detectarClubesEnTexto(t) {
+  let n = ' ' + norm(t).replace(/[^A-ZÑ0-9 ().]/g, ' ').replace(/\s+/g, ' ') + ' ';
+  const hallados = [];
+  for (const b of BUSCABLES) {
+    let idx = n.indexOf(' ' + b + ' ');
+    while (idx >= 0) {
+      hallados.push({ pos: idx, club: RIV[b] ? b : ALIAS_CLUBES[b] });
+      n = n.slice(0, idx + 1) + '#'.repeat(b.length) + n.slice(idx + 1 + b.length);
+      idx = n.indexOf(' ' + b + ' ');
+    }
+  }
+  hallados.sort((a, b) => a.pos - b.pos);
+  const out = [];
+  for (const h of hallados) if (!out.includes(h.club)) out.push(h.club);
+  return out;
+}
+function limpiarNombreLibre(t) {
+  return norm(t).replace(/\b(LUNES|MARTES|MIERCOLES|JUEVES|VIERNES|SABADO|DOMINGO|CANCHA|ESTADIO|HS|HORAS|FECHA)\b/g, ' ')
+    .replace(/[^A-ZÑ0-9 ().]/g, ' ').replace(/\s+/g, ' ').trim();
+}
+window.detectarFixturePegado = () => {
+  const txt = document.getElementById('fx-pegar-texto')?.value || '';
+  if (!txt.trim()) { alert('Pegá el texto de la programación primero.'); return; }
+  const filas = [];
+  let fechaVigente = '';
+  const anio = new Date().getFullYear();
+  for (let linea of txt.split('\n')) {
+    linea = linea.trim();
+    if (!linea) continue;
+    // Fecha (DD/MM o DD/MM/AAAA o DD-MM)
+    let fecha = '';
+    const fm = linea.match(/(\d{1,2})[\/\-](\d{1,2})(?:[\/\-](\d{2,4}))?/);
+    if (fm && parseInt(fm[1]) <= 31 && parseInt(fm[2]) <= 12) {
+      const a = fm[3] ? (fm[3].length === 2 ? '20' + fm[3] : fm[3]) : String(anio);
+      fecha = `${a}-${fm[2].padStart(2,'0')}-${fm[1].padStart(2,'0')}`;
+    }
+    const sinFecha = fm ? linea.replace(fm[0], ' ') : linea;
+    // Hora (HH:MM o HH.MM)
+    let hora = '';
+    const hm = sinFecha.match(/(\d{1,2})[:.](\d{2})/);
+    if (hm && parseInt(hm[1]) <= 23 && parseInt(hm[2]) <= 59) hora = hm[1].padStart(2,'0') + ':' + hm[2];
+    const sinHora = hm ? sinFecha.replace(hm[0], ' ') : sinFecha;
+    // Equipos: primero intenta "X vs Y", si no, detecta 2 clubes conocidos en la línea
+    let local = '', visitante = '';
+    const vsM = sinHora.split(/\s+(?:VS\.?|V\/S|VERSUS)\s+/i);
+    if (vsM.length === 2) {
+      const dL = detectarClubesEnTexto(vsM[0]), dV = detectarClubesEnTexto(vsM[1]);
+      local = dL.length ? dL[dL.length-1] : limpiarNombreLibre(vsM[0]);
+      visitante = dV.length ? dV[0] : limpiarNombreLibre(vsM[1]);
+    } else {
+      const dets = detectarClubesEnTexto(sinHora);
+      if (dets.length >= 2) { local = dets[0]; visitante = dets[1]; }
+    }
+    if (!local || !visitante) {
+      // Línea sin partido: si trae fecha, es un encabezado de jornada → queda vigente para las siguientes
+      if (fecha) fechaVigente = fecha;
+      continue;
+    }
+    if (fecha) fechaVigente = fecha;
+    filas.push({ local, visitante, fecha: fecha || fechaVigente, hora, incluir: true });
+  }
+  if (!filas.length) { alert('No pude detectar partidos en el texto. Formatos que entiendo:\n• ALL BOYS vs NUEVA CHICAGO 05/07 15:30\n• 05/07 — 17:10 — RIESTRA - SACACHISPAS\n• Encabezado "SÁBADO 05/07" y partidos debajo'); return; }
+  fxDraft = { filas };
+  render();
+};
+window.setFxCampo = (i, campo, v) => { if (fxDraft?.filas[i]) fxDraft.filas[i][campo] = campo === 'local' || campo === 'visitante' ? norm(v) : v; render(); };
+window.setFxIncluir = (i, v) => { if (fxDraft?.filas[i]) fxDraft.filas[i].incluir = v; render(); };
+window.cargarFxDetectados = async () => {
+  if (!fxDraft) return;
+  let ok = 0, dup = 0, inc = 0;
+  const vistos = new Set(fixture.map(p => `${norm(p.local)}|${norm(p.visitante)}|${p.fecha}`));
+  for (const f of fxDraft.filas) {
+    if (f.incluir === false) continue;
+    const L = resolverClub(f.local).club, V = resolverClub(f.visitante).club;
+    if (!L || !V || !f.fecha || L === V) { inc++; continue; }
+    const k = `${L}|${V}|${f.fecha}`;
+    if (vistos.has(k)) { dup++; continue; }
+    vistos.add(k);
+    await addDoc(collection(db,'air_fixture'), {
+      local: L, visitante: V, fecha: f.fecha, hora: f.hora || '', estadio: '', torneo: '',
+      visitantePermitida: false, internacional: false, ts: serverTimestamp(),
+    });
+    ok++;
+  }
+  fxPegando = false; fxDraft = null;
+  alert(`✅ ${ok} partido(s) cargados al fixture.${dup ? `\n⏭ ${dup} omitidos: ya estaban cargados (mismo cruce y fecha).` : ''}${inc ? `\n⚠️ ${inc} filas incompletas sin cargar (falta club o fecha).` : ''}`);
+  render();
+};
+function pegarFixtureHtml() {
+  if (!fxPegando) return '';
+  const filasHtml = fxDraft ? fxDraft.filas.map((f, i) => {
+    const okL = !!RIV[norm(f.local)], okV = !!RIV[norm(f.visitante)];
+    const chip = c => c ? '<span title="Club reconocido en la base" style="color:#059669;font-weight:700">✓</span>' : '<span title="No está en la base de rivalidades: no va a cruzar antecedentes" style="color:#d97706;font-weight:700">⚠</span>';
+    return `
+      <div style="display:grid;grid-template-columns:26px 1fr 18px 1fr 18px 118px 78px;gap:6px;align-items:center;padding:7px;background:${f.incluir!==false?'#eff6ff':'#f9fafb'};border:1px solid #bfdbfe;border-radius:8px;font-size:12px">
+        <input type="checkbox" ${f.incluir!==false?'checked':''} onchange="setFxIncluir(${i}, this.checked)" style="width:16px;height:16px;accent-color:#0C447C">
+        <input list="dl-clubes-peg" value="${esc(f.local)}" onchange="setFxCampo(${i},'local',this.value)" style="font-size:12px;padding:5px 8px;text-transform:uppercase">
+        ${chip(okL)}
+        <input list="dl-clubes-peg" value="${esc(f.visitante)}" onchange="setFxCampo(${i},'visitante',this.value)" style="font-size:12px;padding:5px 8px;text-transform:uppercase">
+        ${chip(okV)}
+        <input type="date" value="${esc(f.fecha)}" onchange="setFxCampo(${i},'fecha',this.value)" style="font-size:12px;padding:5px 6px">
+        <input type="time" value="${esc(f.hora)}" onchange="setFxCampo(${i},'hora',this.value)" style="font-size:12px;padding:5px 6px">
+      </div>`;
+  }).join('') : '';
+  return `
+  <div class="fc" style="border:2px solid #0284c7">
+    <div style="display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:8px;margin-bottom:8px">
+      <div>
+        <div style="font-size:15px;font-weight:700">📋 Pegar fixture</div>
+        <div style="font-size:11.5px;color:#6b7280;margin-top:2px">Pegá la programación tal cual te llega (WhatsApp, mail, Excel). Detecto partidos, fechas y horas; revisás y cargás todo junto.</div>
+      </div>
+      <button class="btn-mini" onclick="cerrarPegarFixture()">✕ Cerrar</button>
+    </div>
+    <textarea id="fx-pegar-texto" style="min-height:110px;font-size:12.5px" placeholder="Ej:&#10;SÁBADO 05/07&#10;15:30 ALL BOYS vs NUEVA CHICAGO&#10;17:10 RIESTRA vs SACACHISPAS&#10;DOMINGO 06/07&#10;LAMADRID vs COMUNICACIONES 15:00"></textarea>
+    <div class="btns-row" style="margin-top:8px"><button class="btn-main" style="flex:none;padding:8px 18px" onclick="detectarFixturePegado()">🔍 Detectar partidos</button></div>
+    ${fxDraft ? `
+      <div style="margin-top:12px">
+        <div style="display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:8px;margin-bottom:8px">
+          <div style="font-size:13px;font-weight:700">${fxDraft.filas.length} partido(s) detectados — revisá antes de cargar <span style="font-weight:400;font-size:11px;color:#6b7280">(✓ reconocido · ⚠ revisar nombre)</span></div>
+          <button class="btn-main" style="flex:none;padding:8px 16px" onclick="cargarFxDetectados()">💾 Cargar ${fxDraft.filas.filter(f=>f.incluir!==false).length} al fixture</button>
+        </div>
+        <div style="display:flex;flex-direction:column;gap:6px">${filasHtml}</div>
+        <datalist id="dl-clubes-peg">${CLUBES.map(c=>`<option value="${c}">`).join('')}</datalist>
+      </div>` : ''}
+  </div>`;
+}
 
 window.abrirAnalisis = pid => { st.partidoAbierto = pid; render(); window.scrollTo(0,0); };
 window.cerrarAnalisis = () => { st.partidoAbierto = null; render(); };
@@ -819,8 +1081,8 @@ window.guardarInforme = async (finalizar = false) => {
   render();
 };
 window.eliminarInforme = async id => {
-  if (!confirm('¿Eliminar este informe?')) return;
-  await deleteDoc(doc(db,'air_informes', id)); anDraft = null; render();
+  if (!confirm('¿Eliminar este informe? Va a quedar en la papelera por si necesitás recuperarlo.')) return;
+  await borrarConPapelera('air_informes', id, 'Informe de riesgo'); anDraft = null; render();
 };
 
 // Consolidado (formato DIP)
@@ -861,77 +1123,147 @@ function limpiarBoilerplateAR(texto) {
   return texto.replace(/\s{2,}/g, ' ').trim();
 }
 
-function parsearAnalisisRiesgo(texto) {
-  // misma limpieza anti-marca-de-agua que los partes U.C.O.
-  texto = texto.replace(/\s+/g, ' ').trim();
-  texto = texto.replace(/([a-záéíóúñ])[A-ZÁÉÍÓÚÑ](?=[a-záéíóúñ])/g, '$1');
-  for (let k = 0; k < 3; k++) texto = texto.replace(/(^|\s)[A-ZÁÉÍÓÚÑ](?=\s)/g, '$1').replace(/\s{2,}/g, ' ');
-  texto = limpiarBoilerplateAR(texto);
+// Reconstruye el texto de una página respetando la posición real: agrupa por línea (Y),
+// ordena por X y une caracteres sueltos (PDFs que extraen letra por letra) según el
+// espacio físico entre ítems. Sin esto, el orden del texto no es confiable.
+function reconstruirTextoPdf(items) {
+  const its = items.filter(it => it.str !== undefined && it.str !== null)
+    .map(it => ({ str: it.str, x: it.transform[4], y: it.transform[5], w: it.width || 0, h: it.height || Math.abs(it.transform[3]) || 10 }))
+    .filter(it => it.str.trim() !== '');
+  its.sort((a, b) => b.y - a.y || a.x - b.x);
+  const lineas = [];
+  let actual = null;
+  for (const it of its) {
+    if (!actual || Math.abs(actual.y - it.y) > Math.max(3, it.h * 0.55)) { actual = { y: it.y, items: [it] }; lineas.push(actual); }
+    else actual.items.push(it);
+  }
+  return lineas.map(l => {
+    l.items.sort((a, b) => a.x - b.x);
+    let s = '', finPrev = null;
+    for (const it of l.items) {
+      if (finPrev !== null && (it.x - finPrev) > Math.max(0.8, it.h * 0.22)) s += ' ';
+      s += it.str;
+      finPrev = it.x + it.w;
+    }
+    return s.replace(/\s{2,}/g, ' ').trim();
+  }).filter(l => l && !/^[A-ZÁÉÍÓÚÑa-záéíóúñ]$/.test(l)).join('\n');
+}
 
-  const nroAR = (texto.match(/An[áa]lisis de Riesgo Nro\.?\s*(\d+)/i) || [])[1] || '';
-  const mFI = texto.match(/C\.A\.B\.A\.,?\s*(\d{1,2})\s+de\s+([a-záéíóúñ]+)\s+del?\s+(\d{4})/i);
+function parsearAnalisisRiesgo(textoRaw) {
+  // 1) Limpieza por líneas: las marcas de agua rotadas quedan como líneas de letras
+  //    sueltas → se filtran SIN tocar el texto real (el método viejo borraba mayúsculas
+  //    sueltas de todo el documento y destruía nombres de equipos).
+  const lineas = String(textoRaw).split('\n').map(l => l.replace(/\s{2,}/g, ' ').trim()).filter(Boolean)
+    .filter(l => { const t = l.split(' '); const sueltas = t.filter(x => x.length === 1).length; return !(t.length >= 4 && sueltas / t.length > 0.6); });
+  const texto = limpiarBoilerplateAR(lineas.join(' ').replace(/\s{2,}/g, ' ').trim());
+
+  const nroAR = (texto.match(/An[áa]lisis de Riesgo\s+(?:Nro\.?|N[°º]\.?|Nro)\s*:?\s*(\d+)/i) || [])[1] || '';
+  const mFI = texto.match(/C\.?A\.?B\.?A\.?,?\s*(\d{1,2})\s+de\s+([a-záéíóúñ]+)\s+(?:de|del)\s+(\d{4})/i);
   let fechaInforme = '';
   if (mFI) { const mi = MESES.findIndex(m => m.toLowerCase() === mFI[2].toLowerCase()); if (mi >= 0) fechaInforme = `${mFI[3]}-${String(mi+1).padStart(2,'0')}-${String(parseInt(mFI[1])).padStart(2,'0')}`; }
 
-  // Cortar el cierre del documento
   const finDoc = texto.search(/Sin otro particular/i);
   const cuerpo = finDoc > 0 ? texto.slice(0, finDoc) : texto;
 
-  // Secciones: cada una arranca con "Espectáculo deportivo a celebrarse"
-  const marcas = [...cuerpo.matchAll(/Espect[áa]culo deportivo a celebrarse/gi)];
-  // Primer pase: título "crudo" de cada sección (para recortar el cuerpo de la anterior)
-  const titulosRaw = marcas.map((m, idx) => {
-    const preIni = idx === 0 ? 0 : marcas[idx-1].index;
-    const pre = cuerpo.slice(preIni, m.index);
-    // El título del club vive entre el último encabezado "Informe de Análisis de Riesgo" y la sección
-    const hs = [...pre.matchAll(/Informe de An[áa]lisis de Riesgo/gi)];
-    let t;
-    if (hs.length) {
-      const ult = hs[hs.length-1];
-      t = pre.slice(ult.index + ult[0].length).trim();
-    } else {
-      t = (pre.replace(/\s{2,}/g,' ').split(/[.!?]\s+/).pop() || '').trim();
+  // Helpers tolerantes a los distintos formatos de la División
+  const fechaDe = s => {
+    let m = s.match(/(\d{1,2})[\/\-\.](\d{1,2})[\/\-\.](\d{2,4})/);
+    if (m && +m[1] <= 31 && +m[2] <= 12) { const a = m[3].length === 2 ? '20' + m[3] : m[3]; return `${a}-${m[2].padStart(2,'0')}-${m[1].padStart(2,'0')}`; }
+    m = s.match(/(\d{1,2})\s+de\s+([a-záéíóúñ]+)\s+(?:de|del)\s+(\d{4})/i);
+    if (m) { const mi = MESES.findIndex(x => x.toLowerCase() === m[2].toLowerCase()); if (mi >= 0) return `${m[3]}-${String(mi+1).padStart(2,'0')}-${String(+m[1]).padStart(2,'0')}`; }
+    return '';
+  };
+  const horaDe = s => { const m = s.match(/(?:a las|hora[s]?)[:\s]+(\d{1,2})[:\.](\d{2})/i) || s.match(/(\d{1,2})[:\.](\d{2})\s*(?:hs\b|horas)/i); return m ? m[1].padStart(2,'0') + ':' + m[2] : ''; };
+  const riesgoDe = s => { const m = s.match(/CONFLICTIVIDAD[:\s]+(ALTA|MEDIA|BAJA|ALTO|MEDIO|BAJO)/i) || s.match(/\bRIESGO[:\s]+(ALTO|MEDIO|BAJO|ALTA|MEDIA|BAJA)/i); if (!m) return ''; const t = m[1].toUpperCase(); return { ALTA:'ALTO', MEDIA:'MEDIO', BAJA:'BAJO' }[t] || t; };
+  const esClub = t => { const r = resolverClub(limpiarNombreClub(t) || t); return (r.estado === 'ok' || r.estado === 'alias') ? r.club : ''; };
+
+  // 2) Delimitación de secciones — tres estrategias en cascada:
+  //    a) formato propio de la app ("Espectáculo deportivo a celebrarse")
+  //    b) títulos "X vs Y" donde ambos lados resuelven a clubes de la base
+  //    c) anclas "CONFLICTIVIDAD ..." (último recurso: una sección por graduación)
+  let modo = 'esp';
+  let marcas = [...cuerpo.matchAll(/Espect[áa]culo deportivo a celebrarse/gi)].map(m => ({ i: m.index }));
+  if (!marcas.length) {
+    modo = 'tit';
+    const reTit = /([A-Za-zÁÉÍÓÚÑáéíóúñ][A-Za-zÁÉÍÓÚÑáéíóúñ0-9\.\(\)' ]{2,48}?)\s+[Vv][SsS]\.?\s+([A-Za-zÁÉÍÓÚÑáéíóúñ][A-Za-zÁÉÍÓÚÑáéíóúñ0-9\.\(\)' ]{2,48})/g;
+    for (const m of cuerpo.matchAll(reTit)) {
+      // El lado izquierdo puede arrastrar contexto previo: nos quedamos con el último
+      // segmento (después de . , ; : —) y anclamos la sección donde empieza ese nombre
+      const partes = m[1].split(/[,;:.•●\-–]/);
+      const ultimo = partes[partes.length - 1];
+      const L = esClub(ultimo), V = esClub(m[2]);
+      if (L && V && L !== V) {
+        const off = (m[1].length - ultimo.length) + (ultimo.length - ultimo.trimStart().length);
+        marcas.push({ i: m.index + off, L, V, raw: m[0].slice(off) });
+      }
     }
-    return t.replace(/^([A-Z]\.\s?){2,3}\s*/,'').trim();
-  });
+    marcas = marcas.filter((m, i) => i === 0 || m.i - marcas[i-1].i > 80);
+  }
+  if (!marcas.length) {
+    modo = 'conf';
+    const cs = [...cuerpo.matchAll(/CONFLICTIVIDAD[:\s]+(ALTA|MEDIA|BAJA|ALTO|MEDIO|BAJO)/gi)].map(m => m.index);
+    marcas = cs.map((c, k) => ({ i: Math.max(k === 0 ? 0 : cs[k-1] + 30, c - 1400) }));
+  }
+  if (!marcas.length) return { nroAR, fechaInforme, filas: [] };
+
   const filas = [];
   marcas.forEach((m, idx) => {
-    const ini = m.index;
-    let fin = idx + 1 < marcas.length ? marcas[idx+1].index : cuerpo.length;
-    // Recortar antes del título de la sección siguiente (así las iniciales quedan en ESTA sección)
-    if (idx + 1 < marcas.length && titulosRaw[idx+1]) {
-      const tIdx = cuerpo.lastIndexOf(titulosRaw[idx+1], marcas[idx+1].index);
-      if (tIdx > ini) fin = tIdx;
-    }
-    const tituloLocal = titulosRaw[idx];
-
+    const ini = m.i;
+    const fin = idx + 1 < marcas.length ? marcas[idx+1].i : cuerpo.length;
     let body = cuerpo.slice(ini, fin).trim();
     body = body.replace(/(?:Informe de An[áa]lisis de Riesgo\s*)+$/i, '').trim();
-    // Iniciales del analista al final de la sección
+    // Formato app: la cola de la sección arrastra el encabezado repetido + el título del
+    // próximo club; se recorta solo si la cola es corta (no es contenido de otra página)
+    if (modo === 'esp') {
+      const ms = [...body.matchAll(/Informe de An[áa]lisis de Riesgo/gi)];
+      if (ms.length) { const ult = ms[ms.length-1]; if (body.length - ult.index < 220) body = body.slice(0, ult.index).trim(); }
+    }
+    // Formato títulos: el body arranca con el título "X vs Y", que no es parte del análisis
+    if (modo === 'tit' && m.raw && body.startsWith(m.raw)) body = body.slice(m.raw.length).replace(/^[\s\-–—:•●]+/, '').trim();
+
+    // Preámbulo hacia atrás (formato app: el título del local vive antes de la marca)
+    let pre = '';
+    if (modo === 'esp') {
+      const preIni = idx === 0 ? 0 : marcas[idx-1].i;
+      let p = cuerpo.slice(preIni, ini);
+      const hs = [...p.matchAll(/Informe de An[áa]lisis de Riesgo/gi)];
+      pre = (hs.length ? p.slice(hs[hs.length-1].index + hs[hs.length-1][0].length) : (p.split(/[.!?]\s+/).pop() || '')).replace(/^([A-Z]\.\s?){2,3}\s*/, '').trim();
+    }
+
+    // Iniciales del analista al final
     let iniciales = '';
     const mIni = body.match(/\s((?:[A-Z]\.\s?){2,3}[A-Z]?\.?)\s*$/);
-    if (mIni && /^[A-Z\.\s]+$/.test(mIni[1])) { iniciales = mIni[1].replace(/\s+/g,''); body = body.slice(0, mIni.index).trim(); }
+    if (mIni && /^[A-Z\.\s]+$/.test(mIni[1])) { iniciales = mIni[1].replace(/\s+/g, ''); body = body.slice(0, mIni.index).trim(); }
 
-    const mF = body.match(/el\s+d[íi]a\s+[a-záéíóúñ]+\s+(\d{1,2})\s+de\s+([a-záéíóúñ]+(?:\s+[a-záéíóúñ]+)?)\s+del?\s+(\d{4})/i)
-            || body.match(/el\s+(\d{1,2})\s+de\s+([a-záéíóúñ]+)\s+del?\s+(\d{4})/i);
-    let fechaPartido = '';
-    if (mF) { const mt = mF[2].replace(/\s+/g,'').toLowerCase(); const mi = MESES.findIndex(x => x.toLowerCase() === mt); if (mi >= 0) fechaPartido = `${mF[3]}-${String(mi+1).padStart(2,'0')}-${String(parseInt(mF[1])).padStart(2,'0')}`; }
-    const hora = (body.match(/a las\s+(\d{1,2}[:\.]\d{2})/i) || [])[1]?.replace('.',':') || '';
-    const visitanteCrudo = (body.match(/frente a su par,?\s*(?:el la|el|la)?\s*(.{4,70}?)\.\s*En virtud/i) || [])[1] || '';
-    const riesgoTxt = (body.match(/CONFLICTIVIDAD\s+(ALTA|MEDIA|BAJA)/i) || [])[1] || '';
-    const riesgo = { ALTA:'ALTO', MEDIA:'MEDIO', BAJA:'BAJO' }[riesgoTxt.toUpperCase()] || '';
+    // Equipos: título VS → "frente a su par el X" + preámbulo → detección de clubes en el texto
+    let local = '', visitante = '';
+    if (modo === 'tit') { local = m.L; visitante = m.V; }
+    if (!local || !visitante) {
+      const visCrudo = (body.match(/frente a su par,?\s*(?:el la|el|la)?\s*(.{4,70}?)[\.,]/i) || [])[1] || '';
+      if (!visitante && visCrudo) visitante = esClub(visCrudo) || limpiarNombreClub(visCrudo);
+      if (!local && pre) local = esClub(pre) || limpiarNombreClub(pre);
+    }
+    if (!local || !visitante) {
+      const dets = detectarClubesEnTexto((pre + ' ' + body.slice(0, 700)));
+      if (!local) local = dets.find(c => c !== visitante) || '';
+      if (!visitante) visitante = dets.find(c => c !== local) || '';
+    }
 
-    // Reconstruir el análisis con párrafos
+    // Fecha y hora: primero en la zona previa a la graduación, después en todo el body
+    const posConf = body.search(/CONFLICTIVIDAD/i);
+    const zonaHeader = posConf > 0 ? body.slice(0, posConf + 60) : body;
+    const fechaPartido = fechaDe(zonaHeader) || fechaDe(body);
+    const hora = horaDe(zonaHeader) || horaDe(body);
+    const riesgo = riesgoDe(body);
+
+    // Análisis completo con párrafos: incluye el texto posterior a la graduación
+    // y resalta la sección "ANÁLISIS DE SU SITUACIÓN" si existe
     let analisis = body
-      .replace(/\.\s*En virtud de las razones/,'.\n\nEn virtud de las razones')
-      .replace(/(CONFLICTIVIDAD\s+(?:ALTA|MEDIA|BAJA)\.?)\s*/i, '$1\n\n');
+      .replace(/\.\s*En virtud de las razones/, '.\n\nEn virtud de las razones')
+      .replace(/(CONFLICTIVIDAD[:\s]+(?:ALTA|MEDIA|BAJA|ALTO|MEDIO|BAJO)\.?)\s*/i, '$1\n\n')
+      .replace(/\s*(AN[ÁA]LISIS DE (?:SU )?SITUACI[ÓO]N[:\s]*)/i, '\n\n$1\n');
 
-    filas.push({
-      incluir: true,
-      local: limpiarNombreClub(tituloLocal),
-      visitante: limpiarNombreClub(visitanteCrudo),
-      fechaPartido, hora, riesgo, iniciales, analisis,
-    });
+    filas.push({ incluir: true, local: norm(local), visitante: norm(visitante), fechaPartido, hora, riesgo, iniciales, analisis });
   });
   return { nroAR, fechaInforme, filas };
 }
@@ -952,7 +1284,7 @@ window.importarInformesHistoricos = async (input) => {
       for (let i = 1; i <= pdf.numPages; i++) {
         const page = await pdf.getPage(i);
         const tc = await page.getTextContent();
-        texto += tc.items.map(it => it.str).join(' ') + ' ';
+        texto += reconstruirTextoPdf(tc.items) + '\n';
       }
       const r = parsearAnalisisRiesgo(texto);
       r.filas.forEach(f => { f.nroAR = r.nroAR; f.fechaInforme = r.fechaInforme; f.archivo = file.name; });
@@ -995,8 +1327,7 @@ window.guardarHistoricos = async () => {
   alert(`✅ ${guardadas} informe(s) histórico(s) cargados al historial.${dupes ? ` Se omitieron ${dupes} duplicados.` : ''} El motor de riesgo ya los pondera como antecedentes.`);
 };
 window.eliminarHistorico = async id => {
-  if (!confirm('¿Eliminar este informe histórico del historial?')) return;
-  await deleteDoc(doc(db,'air_informes', id));
+  await borrarConPapelera('air_informes', id, 'Informe histórico');
 };
 window.toggleHistLista = () => { histVerLista = !histVerLista; render(); };
 
@@ -1316,12 +1647,14 @@ function renderTabInformes() {
         <button class="btn-mini" style="background:#0C447C;color:#fff;border-color:#0C447C" onclick="generarConsolidadoPDF()">📕 PDF institucional (${fins.length})</button>
         <button class="btn-mini" style="background:#059669;color:#fff;border-color:#047857" onclick="generarConsolidado()">📄 Copiar texto consolidado</button>
         <label class="btn-mini" style="cursor:pointer;background:#7c3aed;color:#fff;border-color:#6d28d9">📥 Importar históricos (PDF)<input type="file" accept=".pdf" multiple onchange="importarInformesHistoricos(this)" style="display:none"></label>
+        <button class="btn-mini" style="background:#0284c7;color:#fff;border-color:#0369a1" onclick="abrirPegarFixture()">📋 Pegar fixture</button>
         <button class="btn-mini" style="background:#0C447C;color:#fff;border-color:#0C447C" onclick="abrirFormPartido()">➕ Cargar partido</button>
       </div>
     </div>
     ${histImportando ? `<div class="fc" style="text-align:center;color:#6b7280">⏳ Leyendo PDF de análisis de riesgo...</div>` : ''}
     ${histPreviewHtml()}
     ${histListaHtml()}
+    ${pegarFixtureHtml()}
     ${formHtml}
     ${lista.length ? cards : `<div class="empty">📋 No hay partidos ${st.filtroInformes==='pendientes'?'pendientes de análisis':'en este filtro'}. Cargá el fixture con el botón ➕.</div>`}`;
 }
@@ -1343,7 +1676,8 @@ function histPreviewHtml() {
     </div>
     <div style="margin-top:10px;display:flex;flex-direction:column;gap:8px">
       ${histDraft.filas.map((f, i) => `
-        <div style="display:grid;grid-template-columns:28px 1fr 1fr 120px 90px 90px;gap:6px;align-items:center;padding:8px;background:${f.incluir!==false?'#faf5ff':'#f9fafb'};border:1px solid #e9d5ff;border-radius:8px;font-size:12px">
+        <div style="background:${f.incluir!==false?'#faf5ff':'#f9fafb'};border:1px solid #e9d5ff;border-radius:8px;padding:8px">
+        <div style="display:grid;grid-template-columns:28px 1fr 1fr 120px 90px 90px;gap:6px;align-items:center;font-size:12px">
           <input type="checkbox" ${f.incluir!==false?'checked':''} onchange="setHistIncluir(${i}, this.checked)" style="width:16px;height:16px;accent-color:#7c3aed">
           <input list="lista-clubes" value="${esc(f.local)}" onchange="setHistCampo(${i},'local',this.value)" style="font-size:12px;padding:5px 8px;text-transform:uppercase">
           <input list="lista-clubes" value="${esc(f.visitante)}" onchange="setHistCampo(${i},'visitante',this.value)" style="font-size:12px;padding:5px 8px;text-transform:uppercase">
@@ -1353,6 +1687,10 @@ function histPreviewHtml() {
             ${!f.riesgo ? '<option selected value="">¿?</option>' : ''}
           </select>
           <span style="color:#6b7280">${esc(f.iniciales||'—')} ${f.nroAR ? '· AR '+esc(f.nroAR) : ''}</span>
+        </div>
+        ${f.analisis && f.analisis.length > 30
+          ? `<div style="font-size:11px;color:#6b7280;margin-top:6px;line-height:1.4">📝 <b>${f.analisis.length}</b> caracteres de análisis: <i>${esc(f.analisis.replace(/\s+/g,' ').slice(0,150))}…</i></div>`
+          : `<div style="font-size:11px;color:#d97706;margin-top:6px">⚠ No se detectó texto de análisis en esta sección.</div>`}
         </div>`).join('')}
     </div>
     <datalist id="lista-clubes">${CLUBES.map(c=>`<option value="${c}">`).join('')}</datalist>
@@ -1814,8 +2152,7 @@ window.guardarAntecedenteNoticia = async idx => {
   });
 };
 window.eliminarAntecedente = async id => {
-  if (!confirm('¿Eliminar este antecedente?')) return;
-  await deleteDoc(doc(db,'air_antecedentes', id));
+  await borrarConPapelera('air_antecedentes', id, 'Antecedente');
 };
 
 // ── Validación de antecedentes de la ingesta automática ─────────────────────
@@ -1824,8 +2161,7 @@ window.aprobarAntecedente = async id => {
   await updateDoc(doc(db,'air_antecedentes', id), { estado:'validado', validadoPor: currentUser?.id || '' });
 };
 window.descartarAntecedente = async id => {
-  if (!confirm('¿Descartar esta noticia? No va a ponderar en el motor y se elimina.')) return;
-  await deleteDoc(doc(db,'air_antecedentes', id));
+  await borrarConPapelera('air_antecedentes', id, 'Noticia descartada');
 };
 window.setGravedadAntecedente = async (id, g) => { await updateDoc(doc(db,'air_antecedentes', id), { gravedad: g }); };
 window.setClubAntecedente = async (id, club) => { const c = norm(club); if (c) await updateDoc(doc(db,'air_antecedentes', id), { club: c }); };
@@ -1866,7 +2202,7 @@ window.guardarRadicalizado = async () => {
   });
   st.formR = false; render();
 };
-window.eliminarRadicalizado = async id => { if (!confirm('¿Eliminar esta persona del registro?')) return; await deleteDoc(doc(db,'radicalizados_copa', id)); };
+window.eliminarRadicalizado = async id => { if (!confirm('¿Eliminar esta persona del registro? Va a quedar en la papelera por si necesitás recuperarla.')) return; await borrarConPapelera('radicalizados_copa', id, 'Radicalizado'); };
 window.editarRadCampo = async (id) => {
   const r = radicalizados.find(x=>x.id===id); if(!r) return;
   const nuevoObs = prompt('Observaciones / alias:', r.obs||''); if (nuevoObs === null) return;
@@ -2197,8 +2533,7 @@ window.guardarParte = async () => {
   parteDraft = null; render();
 };
 window.eliminarParte = async id => {
-  if (!confirm('¿Eliminar este parte del historial?')) return;
-  await deleteDoc(doc(db,'air_partes', id));
+  await borrarConPapelera('air_partes', id, 'Parte U.C.O.');
 };
 window.toggleParteExp = id => { parteExpandido = parteExpandido === id ? null : id; render(); };
 
@@ -2299,7 +2634,27 @@ function renderTabUsuarios() {
       <div class="btns-row" style="margin-top:12px"><button class="btn-main" style="flex:none;padding:9px 18px" onclick="crearUsuario()">💾 Crear usuario</button></div>
     </div>` : ''}
   </div>
-  ${usuarios.slice().sort((a,b) => a.id.localeCompare(b.id)).map(u => usuarioCardHtml(u, adminsActivos)).join('')}`;
+  ${usuarios.slice().sort((a,b) => a.id.localeCompare(b.id)).map(u => usuarioCardHtml(u, adminsActivos)).join('')}
+  <div class="fc" style="margin-top:14px">
+    <div style="display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:8px;margin-bottom:8px">
+      <div>
+        <div style="font-size:15px;font-weight:700">🗑 Papelera (${papelera.length})</div>
+        <div style="font-size:11.5px;color:#6b7280;margin-top:2px">Todo lo eliminado en la app queda acá y se puede restaurar con sus vínculos intactos.</div>
+      </div>
+      ${papelera.length ? `<button class="btn-mini" style="color:#b91c1c" onclick="vaciarPapelera()">Vaciar papelera</button>` : ''}
+    </div>
+    ${papelera.length ? papelera.slice(0,40).map(p => {
+      const d = p.data || {};
+      const detalle = d.local && d.visitante ? `${d.local} vs ${d.visitante}${d.fecha||d.fechaPartido?' · '+fmt(d.fecha||d.fechaPartido):''}` : (d.titulo || d.nombre || d.club || '');
+      return `<div style="font-size:12px;padding:7px 0;border-bottom:1px solid #f3f4f6;display:flex;justify-content:space-between;gap:8px;flex-wrap:wrap;align-items:center">
+        <span><b>${esc(p.etiqueta || COL_LABEL[p.col] || p.col)}</b>${detalle ? ' — ' + esc(String(detalle).slice(0,80)) : ''} <span style="color:#9ca3af;font-size:10.5px">· eliminado ${fmt(p.eliminadoEn)}${p.por ? ' por ' + esc(p.por) : ''}</span></span>
+        <span style="display:flex;gap:6px">
+          <button class="btn-mini" style="background:#059669;color:#fff;border-color:#047857;padding:3px 10px" onclick="restaurarPapelera('${p.id}')">↩️ Restaurar</button>
+          <button class="btn-mini" style="color:#b91c1c;padding:3px 8px" onclick="purgarPapelera('${p.id}')">✕</button>
+        </span>
+      </div>`;
+    }).join('') + (papelera.length > 40 ? `<div style="font-size:11px;color:#6b7280;margin-top:6px">… y ${papelera.length-40} más.</div>` : '') : `<div class="empty" style="padding:14px">La papelera está vacía.</div>`}
+  </div>`;
 }
 function usuarioCardHtml(u, adminsActivos) {
   const esYo = u.id === currentUser.id;
