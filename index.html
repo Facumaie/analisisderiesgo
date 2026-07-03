@@ -4,22 +4,38 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Análisis de Informes de Riesgo — DSED</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Manrope:wght@400;500;600;700;800&display=swap" rel="stylesheet">
 <style>
   *{box-sizing:border-box;margin:0;padding:0}
-  body{font-family:system-ui,-apple-system,sans-serif;background:#f0f2f5;color:#1a1a1a;min-height:100vh}
-  .header{background:#0C447C;padding:12px 20px;display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:8px;position:sticky;top:0;z-index:100}
-  .header-left{display:flex;align-items:center;gap:12px}
-  .logo{width:38px;height:38px;border-radius:8px;background:rgba(255,255,255,.15);display:flex;align-items:center;justify-content:center;font-size:20px;flex-shrink:0}
-  .htitle{font-size:14px;font-weight:600;color:#fff}
-  .hsub{font-size:11px;color:rgba(255,255,255,.7);margin-top:1px}
-  .tab-bar{display:flex;gap:2px;background:rgba(0,0,0,.2);border-radius:8px;padding:3px;flex-wrap:wrap}
-  .tab{padding:6px 12px;border-radius:6px;font-size:12px;font-weight:500;cursor:pointer;color:rgba(255,255,255,.7);border:none;background:transparent;transition:.15s}
-  .tab.active{background:#fff;color:#0C447C}
-  .content{padding:16px 20px;max-width:920px;margin:0 auto}
-  .perfil-badge{font-size:11px;color:#fff;background:rgba(255,255,255,.15);padding:5px 10px;border-radius:6px;cursor:pointer}
+  body{font-family:'Manrope',system-ui,-apple-system,sans-serif;background:#eef1f6;color:#1a1a1a;min-height:100vh}
 
-  .fc{background:#fff;border:1px solid #e5e7eb;border-radius:12px;padding:16px;margin-bottom:12px}
-  .sec-label{font-size:11px;font-weight:600;color:#6b7280;margin-bottom:4px;text-transform:uppercase;letter-spacing:.05em}
+  /* ═══ LAYOUT: SIDEBAR IZQUIERDA + CONTENIDO ═══ */
+  .app-shell{display:flex;min-height:100vh}
+  .sidebar{width:236px;flex-shrink:0;background:linear-gradient(180deg,#0C447C 0%,#083058 60%,#062647 100%);display:flex;flex-direction:column;position:sticky;top:0;height:100vh;box-shadow:4px 0 24px rgba(6,38,71,.25);z-index:100}
+  .sb-brand{display:flex;align-items:center;gap:11px;padding:18px 16px 16px;border-bottom:1px solid rgba(255,255,255,.12)}
+  .sb-escudo{width:46px;height:46px;border-radius:12px;background:#fff;padding:4px;flex-shrink:0;box-shadow:0 4px 12px rgba(0,0,0,.3)}
+  .sb-escudo img{width:100%;height:100%;object-fit:contain}
+  .sb-title{font-size:12.5px;font-weight:800;color:#fff;line-height:1.25;letter-spacing:.03em;text-transform:uppercase}
+  .sb-sub{font-size:10px;font-weight:600;color:#8fb4d9;margin-top:3px;letter-spacing:.14em;text-transform:uppercase}
+  .sb-nav{flex:1;padding:14px 12px;display:flex;flex-direction:column;gap:4px;overflow-y:auto}
+  .tab{display:flex;align-items:center;gap:12px;width:100%;padding:11px 14px;border-radius:11px;font-family:inherit;font-size:13.5px;font-weight:700;letter-spacing:.02em;cursor:pointer;color:rgba(255,255,255,.72);border:none;background:transparent;transition:.18s;text-align:left;position:relative}
+  .tab .tab-ico{font-size:17px;width:22px;text-align:center;flex-shrink:0}
+  .tab:hover{background:rgba(255,255,255,.09);color:#fff;transform:translateX(2px)}
+  .tab.active{background:#fff;color:#0C447C;box-shadow:0 6px 18px rgba(0,0,0,.28);font-weight:800}
+  .tab.active::before{content:'';position:absolute;left:-12px;top:20%;height:60%;width:4px;border-radius:0 4px 4px 0;background:#ffd166}
+  .sb-footer{padding:14px 12px;border-top:1px solid rgba(255,255,255,.12)}
+  .perfil-badge{display:flex;align-items:center;justify-content:center;gap:6px;width:100%;font-size:12px;font-weight:700;letter-spacing:.03em;color:#fff;background:rgba(255,255,255,.13);padding:10px 12px;border-radius:10px;cursor:pointer;transition:.15s;border:1px solid rgba(255,255,255,.14)}
+  .perfil-badge:hover{background:rgba(255,255,255,.22)}
+  .main{flex:1;min-width:0}
+  .topbar{position:sticky;top:0;z-index:90;background:rgba(238,241,246,.92);backdrop-filter:blur(8px);padding:14px 26px 12px;border-bottom:1px solid #e2e8f0;display:flex;align-items:center;justify-content:space-between;gap:10px}
+  .tb-title{font-size:19px;font-weight:800;color:#0C447C;letter-spacing:.01em}
+  .tb-sub{font-size:11px;font-weight:600;color:#94a3b8;letter-spacing:.1em;text-transform:uppercase}
+  .content{padding:20px 26px 40px;max-width:960px}
+
+  .fc{background:#fff;border:1px solid #e6eaf0;border-radius:15px;padding:18px;margin-bottom:14px;box-shadow:0 2px 10px rgba(15,23,42,.05)}
+  .sec-label{font-size:10.5px;font-weight:800;color:#64748b;margin-bottom:4px;text-transform:uppercase;letter-spacing:.1em}
   .fr{display:grid;gap:10px;margin-bottom:12px}
   .fr2{grid-template-columns:1fr 1fr}
   .fr3{grid-template-columns:1fr 1fr 1fr}
@@ -28,12 +44,13 @@
   input:focus,select:focus,textarea:focus{border-color:#3b82f6;box-shadow:0 0 0 3px rgba(59,130,246,.1)}
   textarea{resize:vertical;min-height:82px;line-height:1.5}
   .btns-row{display:flex;gap:8px;margin-top:4px;flex-wrap:wrap}
-  .btn-main{flex:1;padding:10px;border-radius:8px;background:#0C447C;color:#fff;font-size:13px;font-weight:500;border:none;cursor:pointer;display:flex;align-items:center;justify-content:center;gap:6px;transition:.1s}
-  .btn-main:hover{background:#185FA5}
+  .btn-main{flex:1;padding:11px 14px;border-radius:10px;background:linear-gradient(135deg,#0C447C,#1663B0);color:#fff;font-family:inherit;font-size:13px;font-weight:800;letter-spacing:.03em;border:none;cursor:pointer;display:flex;align-items:center;justify-content:center;gap:7px;transition:.18s;box-shadow:0 4px 12px rgba(12,68,124,.28)}
+  .btn-main:hover{transform:translateY(-1px);box-shadow:0 7px 18px rgba(12,68,124,.38);background:linear-gradient(135deg,#0d4d8d,#1a74cc)}
   .btn-main:disabled{opacity:.5;cursor:not-allowed}
   .btn-sn{flex:1;padding:10px;border-radius:8px;background:#f3f4f6;color:#374151;font-size:13px;font-weight:500;border:1px solid #e5e7eb;cursor:pointer;display:flex;align-items:center;justify-content:center;gap:6px}
   .btn-sn:hover{background:#e5e7eb}
-  .btn-mini{padding:3px 10px;border-radius:6px;font-size:11px;cursor:pointer;border:1px solid #e5e7eb;background:#fff;color:#374151}
+  .btn-mini{padding:5px 12px;border-radius:8px;font-family:inherit;font-size:11.5px;font-weight:700;letter-spacing:.02em;cursor:pointer;border:1px solid #dbe2ea;background:#fff;color:#334155;transition:.15s;box-shadow:0 1px 3px rgba(15,23,42,.06)}
+  .btn-mini:hover{border-color:#0C447C;color:#0C447C;box-shadow:0 3px 8px rgba(12,68,124,.15);transform:translateY(-1px)}
 
   .stat-row{display:grid;grid-template-columns:repeat(4,1fr);gap:8px;margin-bottom:14px}
   .sb{background:#fff;border:1px solid #e5e7eb;border-radius:10px;padding:12px 14px}
@@ -116,21 +133,34 @@
   .login-perfil-btn .sub{display:block;font-size:10px;font-weight:400;margin-top:2px}
   .login-perfil-btn.activo{background:#0C447C;border-color:#0C447C;color:#fff}
   .login-input{margin-bottom:12px;text-align:center;font-size:15px;padding:11px}
-  .login-btn{width:100%;padding:12px;border-radius:10px;background:#0C447C;color:#fff;font-size:14px;font-weight:600;border:none;cursor:pointer}
+  .login-btn{width:100%;padding:13px;border-radius:11px;background:linear-gradient(135deg,#0C447C,#1663B0);color:#fff;font-family:inherit;font-size:14px;font-weight:800;letter-spacing:.05em;text-transform:uppercase;border:none;cursor:pointer;transition:.18s;box-shadow:0 5px 16px rgba(12,68,124,.35)}
+  .login-btn:hover{transform:translateY(-1px);box-shadow:0 8px 22px rgba(12,68,124,.45)}
   .login-error{background:#fee2e2;color:#7f1d1d;border:1px solid #fca5a5;border-radius:8px;padding:8px;font-size:12px;margin-bottom:12px}
   .loading-overlay{position:fixed;inset:0;background:rgba(255,255,255,.9);z-index:400;display:flex;align-items:center;justify-content:center;gap:10px;font-size:14px;color:#374151}
   .spinner{width:22px;height:22px;border:3px solid #e5e7eb;border-top-color:#0C447C;border-radius:50%;animation:spin .8s linear infinite}
   @keyframes spin{to{transform:rotate(360deg)}}
 
-  @media(max-width:720px){
+  @media(max-width:860px){
+    .app-shell{flex-direction:column}
+    .sidebar{width:100%;height:auto;position:sticky;top:0;flex-direction:column;box-shadow:0 4px 18px rgba(6,38,71,.3)}
+    .sb-brand{padding:12px 14px 10px;border-bottom:none}
+    .sb-nav{flex-direction:row;overflow-x:auto;padding:0 10px 10px;gap:6px;scrollbar-width:none}
+    .sb-nav::-webkit-scrollbar{display:none}
+    .tab{flex-direction:column;gap:3px;padding:8px 13px;font-size:10.5px;flex-shrink:0;text-align:center}
+    .tab .tab-ico{width:auto;font-size:18px}
+    .tab:hover{transform:none}
+    .tab.active::before{display:none}
+    .sb-footer{position:absolute;top:12px;right:12px;padding:0;border:none;width:auto}
+    .perfil-badge{width:auto;padding:7px 11px;font-size:11px}
+    .topbar{padding:12px 14px 10px}
+    .tb-title{font-size:16px}
+    .content{padding:14px 14px 30px}
     .fr2,.fr3{grid-template-columns:1fr}
     .stat-row{grid-template-columns:repeat(2,1fr)}
-    .content{padding:12px}
-    .header{padding:10px 12px}
   }
   @media print{
     body{background:#fff}
-    .header,.no-print{display:none!important}
+    .sidebar,.topbar,.no-print{display:none!important}
     .content{max-width:100%;padding:0}
   }
 </style>
@@ -154,29 +184,39 @@
 </div>
 
 <div id="app" style="display:none">
-  <div class="header">
-    <div class="header-left">
-      <div class="logo" style="background:#fff;padding:3px"><img id="header-escudo" alt="DPEM" style="width:100%;height:100%;object-fit:contain"></div>
+ <div class="app-shell">
+  <aside class="sidebar no-print">
+    <div class="sb-brand">
+      <div class="sb-escudo"><img id="header-escudo" alt="DPEM"></div>
       <div>
-        <div class="htitle">Análisis de Informes de Riesgo</div>
-        <div class="hsub">Departamento Seguridad en Eventos Deportivos · DPEM</div>
+        <div class="sb-title">Análisis de Informes de Riesgo</div>
+        <div class="sb-sub">DSED · DPEM</div>
       </div>
     </div>
-    <div style="display:flex;align-items:center;gap:10px;flex-wrap:wrap">
-      <div class="tab-bar">
-        <button class="tab active" id="tab-h" onclick="setTab('h')">🏠 Inicio</button>
-        <button class="tab" id="tab-i" onclick="setTab('i')">📋 Informes</button>
-        <button class="tab" id="tab-p" onclick="setTab('p')">📄 Partes U.C.O.</button>
-        <button class="tab" id="tab-e" onclick="setTab('e')">📊 Equipos</button>
-        <button class="tab" id="tab-v" onclick="setTab('v')">⚔️ Rivalidades</button>
-        <button class="tab" id="tab-r" onclick="setTab('r')">⚠️ Radicalizados</button>
-        <button class="tab" id="tab-n" onclick="setTab('n')">📰 Noticias</button>
-        <button class="tab" id="tab-u" onclick="setTab('u')" style="display:none">👥 Usuarios</button>
-      </div>
+    <nav class="sb-nav">
+      <button class="tab active" id="tab-h" onclick="setTab('h')"><span class="tab-ico">🏠</span><span class="tab-lbl">Inicio</span></button>
+      <button class="tab" id="tab-i" onclick="setTab('i')"><span class="tab-ico">📋</span><span class="tab-lbl">Informes</span></button>
+      <button class="tab" id="tab-p" onclick="setTab('p')"><span class="tab-ico">📄</span><span class="tab-lbl">Partes U.C.O.</span></button>
+      <button class="tab" id="tab-e" onclick="setTab('e')"><span class="tab-ico">📊</span><span class="tab-lbl">Equipos</span></button>
+      <button class="tab" id="tab-v" onclick="setTab('v')"><span class="tab-ico">⚔️</span><span class="tab-lbl">Rivalidades</span></button>
+      <button class="tab" id="tab-r" onclick="setTab('r')"><span class="tab-ico">⚠️</span><span class="tab-lbl">Radicalizados</span></button>
+      <button class="tab" id="tab-n" onclick="setTab('n')"><span class="tab-ico">📰</span><span class="tab-lbl">Noticias</span></button>
+      <button class="tab" id="tab-u" onclick="setTab('u')" style="display:none"><span class="tab-ico">👥</span><span class="tab-lbl">Usuarios</span></button>
+    </nav>
+    <div class="sb-footer">
       <span class="perfil-badge" id="perfil-badge" onclick="cerrarSesion()" title="Cerrar sesión">👤 — · 🚪</span>
     </div>
-  </div>
-  <div class="content" id="content-area"></div>
+  </aside>
+  <main class="main">
+    <div class="topbar no-print">
+      <div>
+        <div class="tb-title" id="tb-title">Inicio</div>
+        <div class="tb-sub">Departamento Seguridad en Eventos Deportivos</div>
+      </div>
+    </div>
+    <div class="content" id="content-area"></div>
+  </main>
+ </div>
 </div>
 
 <script type="module">
@@ -293,7 +333,7 @@ const RIV = {
   'CENTRAL CORDOBA (SDE)':{ max:['SAN MARTIN (T)','ATLETICO TUCUMAN'], enem:['BOCA JUNIORS','NEWELLS OLD BOYS'], conf:['RIVER PLATE','INDEPENDIENTE','TALLERES (CBA)'], tens:['DEFENSA Y JUSTICIA'], resp:['BARRACAS CENTRAL','SAN LORENZO','LANUS'], ali:['SAN LORENZO','LANUS'] },
   'DEFENSA Y JUSTICIA':  { max:[], enem:[], conf:['BANFIELD'], tens:[], resp:[], ali:['TIGRE','PLATENSE','FERRO CARRIL OESTE'] },
   'ALDOSIVI':            { max:[], enem:['COLON','UNION (SF)'], conf:[], tens:[], resp:[], ali:['HURACAN'] },
-  'BARRACAS CENTRAL':    { max:['NUEVA CHICAGO'], enem:['HURACAN'], conf:['DEPORTIVO RIESTRA'], tens:[], resp:[], ali:['BOCA JUNIORS','RIVER PLATE','VELEZ SARSFIELD'] },
+  'BARRACAS CENTRAL':    { max:['NUEVA CHICAGO'], enem:['HURACAN'], conf:['DEPORTIVO RIESTRA','SPORTIVO BARRACAS'], tens:[], resp:[], ali:['BOCA JUNIORS','RIVER PLATE','VELEZ SARSFIELD'] },
   'ARSENAL':             { max:[], enem:[], conf:[], tens:['RACING CLUB'], resp:[], ali:['RACING CLUB'] },
   'SARMIENTO':           { max:[], enem:[], conf:[], tens:['BANFIELD'], resp:[], ali:[] },
   'ARGENTINOS JUNIORS':  { max:['PLATENSE'], enem:['ALL BOYS','ROSARIO CENTRAL'], conf:['VELEZ SARSFIELD'], tens:['FERRO CARRIL OESTE'], resp:[], ali:[] },
@@ -301,13 +341,13 @@ const RIV = {
   // ── PRIMERA NACIONAL ────────────────────────────────────────────────────────
   'CHACARITA JUNIORS':   { max:['ATLANTA','ALL BOYS'], enem:['DEFENSORES DE BELGRANO'], conf:['TIGRE','PLATENSE'], tens:[], resp:[], ali:[] },
   'ATLANTA':             { max:['CHACARITA JUNIORS','ALL BOYS'], enem:['NUEVA CHICAGO'], conf:['FERRO CARRIL OESTE','COMUNICACIONES'], tens:['DEFENSORES DE BELGRANO'], resp:[], ali:['FENIX'] },
-  'ALL BOYS':            { max:['NUEVA CHICAGO','ATLANTA','CHACARITA JUNIORS'], enem:['ARGENTINOS JUNIORS','VELEZ SARSFIELD','DEPORTIVO ESPAÑOL'], conf:['FERRO CARRIL OESTE','TEMPERLEY'], tens:[], resp:[], ali:[] },
+  'ALL BOYS':            { max:['NUEVA CHICAGO','ATLANTA','CHACARITA JUNIORS'], enem:['ARGENTINOS JUNIORS','VELEZ SARSFIELD','DEPORTIVO ESPAÑOL','ALMIRANTE BROWN'], conf:['FERRO CARRIL OESTE','TEMPERLEY'], tens:[], resp:[], ali:[] },
   'NUEVA CHICAGO':       { max:['ALL BOYS','ALMIRANTE BROWN'], enem:['ATLANTA','TEMPERLEY','BARRACAS CENTRAL'], conf:['DEPORTIVO MORON','DEPORTIVO ESPAÑOL'], tens:[], resp:[], ali:['DOCK SUD'] },
   'TIGRE':               { max:['PLATENSE','CHACARITA JUNIORS'], enem:['RIVER PLATE','RACING CLUB'], conf:['HURACAN','VELEZ SARSFIELD'], tens:['BANFIELD'], resp:[], ali:['DEFENSA Y JUSTICIA'] },
   'PLATENSE':            { max:['TIGRE'], enem:['VELEZ SARSFIELD','CHACARITA JUNIORS','ARGENTINOS JUNIORS'], conf:['DEFENSORES DE BELGRANO'], tens:[], resp:[], ali:['DEFENSA Y JUSTICIA'] },
   'FERRO CARRIL OESTE':  { max:['VELEZ SARSFIELD','DEPORTIVO MORON'], enem:['ATLANTA','NUEVA CHICAGO'], conf:['ALL BOYS','ARGENTINOS JUNIORS'], tens:[], resp:[], ali:['ALMIRANTE BROWN','DEFENSA Y JUSTICIA'] },
   'DEPORTIVO MORON':     { max:['FERRO CARRIL OESTE','ALMIRANTE BROWN'], enem:['NUEVA CHICAGO','CHICAGO','RIVER PLATE'], conf:['ALMAGRO','DEPORTIVO ESPAÑOL'], tens:[], resp:[], ali:[] },
-  'ALMIRANTE BROWN':     { max:['NUEVA CHICAGO','DEPORTIVO MORON'], enem:['SAN MARTIN (BURZACO)'], conf:['DEPORTIVO ESPAÑOL'], tens:[], resp:[], ali:['FERRO CARRIL OESTE','DEFENSORES DE BELGRANO'] },
+  'ALMIRANTE BROWN':     { max:['NUEVA CHICAGO','DEPORTIVO MORON'], enem:['SAN MARTIN (BURZACO)','ALL BOYS'], conf:['DEPORTIVO ESPAÑOL'], tens:[], resp:[], ali:['FERRO CARRIL OESTE','DEFENSORES DE BELGRANO'] },
   'QUILMES':             { max:['ARGENTINO DE QUILMES','BANFIELD'], enem:['BERAZATEGUI'], conf:['DOCK SUD'], tens:[], resp:[], ali:['VILLA SAN CARLOS'] },
   'ARGENTINO DE QUILMES':{ max:['QUILMES'], enem:['BERAZATEGUI','DOCK SUD'], conf:[], tens:[], resp:[], ali:[] },
   'ESTUDIANTES (BA)':    { max:['ALMAGRO'], enem:[], conf:[], tens:[], resp:[], ali:[] },
@@ -322,7 +362,7 @@ const RIV = {
   'SAN ISIDRO':          { max:['ACASSUSO'], enem:[], conf:[], tens:[], resp:[], ali:[] },
   'VILLA SAN CARLOS':    { max:['DEFENSORES DE CAMBACERES'], enem:[], conf:['CLAYPOLE'], tens:[], resp:[], ali:['QUILMES'] },
   'DEFENSORES DE CAMBACERES': { max:['VILLA SAN CARLOS'], enem:[], conf:[], tens:[], resp:[], ali:[] },
-  'COMUNICACIONES':      { max:['DEPORTIVO ARMENIO'], enem:['ATLANTA'], conf:['SACACHISPAS','DEPORTIVO RIESTRA','DEFENSORES DE BELGRANO'], tens:[], resp:[], ali:['FLANDRIA'] },
+  'COMUNICACIONES':      { max:['DEPORTIVO ARMENIO'], enem:['GENERAL LAMADRID','ATLANTA'], conf:['SACACHISPAS','DEPORTIVO RIESTRA','DEFENSORES DE BELGRANO'], tens:[], resp:[], ali:['FLANDRIA'] },
   'DEPORTIVO ARMENIO':   { max:['COMUNICACIONES','COLEGIO ARMENIO'], enem:[], conf:[], tens:[], resp:[], ali:['FENIX'] },
   'FENIX':               { max:['SACACHISPAS'], enem:[], conf:[], tens:[], resp:[], ali:['ATLANTA','DEPORTIVO ARMENIO'] },
   'SACACHISPAS':         { max:['FENIX','DEPORTIVO RIESTRA'], enem:['COMUNICACIONES'], conf:[], tens:[], resp:[], ali:[] },
@@ -335,7 +375,7 @@ const RIV = {
 
   // ── PRIMERA C / REGIONALES ──────────────────────────────────────────────────
   'LAFERRERE':           { max:['SPORTIVO ITALIANO','EXCURSIONISTAS'], enem:['CLAYPOLE'], conf:[], tens:[], resp:[], ali:[] },
-  'SPORTIVO ITALIANO':   { max:['LAFERRERE'], enem:[], conf:[], tens:[], resp:[], ali:['JUVENTUD UNIDA'] },
+  'SPORTIVO ITALIANO':   { max:['LAFERRERE'], enem:['DEPORTIVO ESPAÑOL'], conf:[], tens:[], resp:[], ali:['JUVENTUD UNIDA'] },
   'EXCURSIONISTAS':      { max:['DEFENSORES DE BELGRANO'], enem:['LAFERRERE','MIDLAND'], conf:['GENERAL LAMADRID'], tens:[], resp:[], ali:[] },
   'DEFENSORES DE BELGRANO': { max:['EXCURSIONISTAS'], enem:['CHACARITA JUNIORS'], conf:['ATLANTA','PLATENSE','COMUNICACIONES'], tens:[], resp:[], ali:['ALMIRANTE BROWN'] },
   'SAN TELMO':           { max:['DOCK SUD'], enem:[], conf:[], tens:[], resp:[], ali:[] },
@@ -344,7 +384,7 @@ const RIV = {
   'CLAYPOLE':            { max:['LINIERS'], enem:['LAFERRERE','SAN MARTIN (BURZACO)'], conf:['VILLA SAN CARLOS'], tens:[], resp:[], ali:[] },
   'JUVENTUD UNIDA':      { max:['ATLAS'], enem:[], conf:[], tens:[], resp:[], ali:['SPORTIVO ITALIANO'] },
   'ATLAS':               { max:['JUVENTUD UNIDA','CENTRO ESPAÑOL'], enem:[], conf:[], tens:[], resp:[], ali:[] },
-  'GENERAL LAMADRID':    { max:['EXCURSIONISTAS','CAÑUELAS FC'], enem:['ARGENTINO DE MERLO','MIDLAND','COLEGIO MIDLAND'], conf:[], tens:[], resp:[], ali:[] },
+  'GENERAL LAMADRID':    { max:['EXCURSIONISTAS','CAÑUELAS FC'], enem:['COMUNICACIONES','ARGENTINO DE MERLO','MIDLAND','COLEGIO MIDLAND'], conf:[], tens:[], resp:[], ali:[] },
   'CAÑUELAS FC':         { max:['GENERAL LAMADRID'], enem:[], conf:[], tens:[], resp:[], ali:[] },
   'MIDLAND':             { max:['ITUZAINGO'], enem:['GENERAL LAMADRID','EXCURSIONISTAS'], conf:[], tens:[], resp:[], ali:[] },
   'LINIERS':             { max:['CLAYPOLE'], enem:[], conf:[], tens:[], resp:[], ali:[] },
@@ -354,11 +394,11 @@ const RIV = {
   'LUGANO':              { max:['DEPORTIVO PARAGUAYO'], enem:[], conf:[], tens:[], resp:[], ali:[] },
   'VICTORIANO ARENAS':   { max:['CENTRAL CORDOBA (R)'], enem:[], conf:[], tens:[], resp:[], ali:['ARGENTINO DE MERLO'] },
   'CENTRAL CORDOBA (R)': { max:['VICTORIANO ARENAS','SPORTIVO BARRACAS'], enem:[], conf:[], tens:[], resp:[], ali:[] },
-  'SPORTIVO BARRACAS':   { max:['CENTRAL CORDOBA (R)'], enem:[], conf:[], tens:[], resp:[], ali:[] },
+  'SPORTIVO BARRACAS':   { max:['CENTRAL CORDOBA (R)'], enem:[], conf:['BARRACAS CENTRAL'], tens:[], resp:[], ali:[] },
   'LEANDRO N. ALEM':     { max:['EL PORVENIR'], enem:[], conf:[], tens:[], resp:[], ali:[] },
   'EL PORVENIR':         { max:['LEANDRO N. ALEM'], enem:[], conf:[], tens:[], resp:[], ali:[] },
   'CENTRO ESPAÑOL':      { max:['ATLAS'], enem:[], conf:[], tens:[], resp:[], ali:[] },
-  'DEPORTIVO ESPAÑOL':   { max:[], enem:['ALL BOYS','NUEVA CHICAGO'], conf:['DEPORTIVO MORON','ALMIRANTE BROWN'], tens:[], resp:[], ali:[] },
+  'DEPORTIVO ESPAÑOL':   { max:[], enem:['SPORTIVO ITALIANO','ALL BOYS','NUEVA CHICAGO'], conf:['DEPORTIVO MORON','ALMIRANTE BROWN'], tens:[], resp:[], ali:[] },
   'SAN MARTIN (BURZACO)':{ max:[], enem:['ALMIRANTE BROWN','CLAYPOLE'], conf:[], tens:[], resp:[], ali:[] },
   'GUEMES (SDE)':        { max:['CENTRAL CORDOBA (SDE)'], enem:[], conf:[], tens:[], resp:[], ali:[] },
 };
@@ -374,8 +414,37 @@ const NIVELES_REL = {
 function norm(s){ return (s||'').toUpperCase().normalize('NFD').replace(/[\u0300-\u036f]/g,'').replace(/\s+/g,' ').trim(); }
 const CLUBES = Object.keys(RIV).sort();
 
+// Relaciones personalizadas cargadas desde la app (colección air_rivalidades).
+// Pisan a la base RIV y pueden llevar una reseña con el historial de hechos.
+let rivCustom = {};
+function rivKey(a, b) { const [x, y] = [norm(a), norm(b)].sort(); return `${x}__${y}`; }
+function getCustomRel(a, b) { return rivCustom[rivKey(a, b)] || null; }
+
+// Reseñas de base — doc "Rivalidades Históricas del Fútbol Porteño" (caps. X a XVII).
+// Una reseña personalizada cargada desde la app (air_rivalidades) pisa a la de base.
+const RESENAS_BASE = {};
+[
+  ['DEPORTIVO RIESTRA', 'SACACHISPAS',
+   'Clásico de la Vecindad (Bajo Flores–Soldati), rivalidad territorial desde 1950. Décadas de paridad y fricción barrial en C y D. Hoy sin cruces oficiales por brecha de categorías; previa de alto fervor si se reedita.'],
+  ['DEFENSORES DE BELGRANO', 'EXCURSIONISTAS',
+   'Clásico del Bajo, entre los más antiguos del fútbol porteño (1917). Historial de alta hostilidad entre parcialidades y operativos exigidos en los 80 y 90. Sin categoría en común, pero la pica sigue plenamente vigente.'],
+  ['GENERAL LAMADRID', 'COMUNICACIONES',
+   'Clásico de los Barrios (Devoto–Agronomía), vecinal por excelencia del centro porteño desde 1960. Banderazos masivos en cada edición pese a restricciones al visitante. Sin cruces regulares por diferencia de categorías.'],
+  ['DEPORTIVO ESPAÑOL', 'SPORTIVO ITALIANO',
+   'Clásico de las Colectividades, único en el mundo. Auge en los 80 en Primera; reencuentros de alta tensión en B Metro y C. Duelos recientes en el Nueva España con pica vigente y fuerte carga identitaria.'],
+  ['BARRACAS CENTRAL', 'SPORTIVO BARRACAS',
+   'Clásico de Barracas, disputa histórica del sur desde los años 20. Duelos ásperos en C y D hasta los 90. En receso oficial por distancia institucional; peso simbólico más que riesgo operativo actual.'],
+].forEach(([a, b, r]) => { RESENAS_BASE[rivKey(a, b)] = r; });
+
+function getResena(a, b) { return getCustomRel(a, b)?.resena || RESENAS_BASE[rivKey(a, b)] || ''; }
+
 function getRelacion(a, b) {
   a = norm(a); b = norm(b);
+  const cust = getCustomRel(a, b);
+  if (cust) {
+    if (cust.nivel === 'ninguna' || cust.nivel === 'ali') return cust.nivel === 'ali' ? null : null;
+    return cust.nivel;
+  }
   const da = RIV[a], dbb = RIV[b];
   for (const nivel of ['max','enem','conf','tens','resp']) {
     if ((da && da[nivel].map(norm).includes(b)) || (dbb && dbb[nivel].map(norm).includes(a))) return nivel;
@@ -383,7 +452,16 @@ function getRelacion(a, b) {
   return null;
 }
 function esRival(a, b) { const r = getRelacion(a,b); return r && r !== 'resp'; }
-function getAlianzas(club) { const d = RIV[norm(club)]; return d ? d.ali : []; }
+function getAlianzas(club) {
+  const c = norm(club);
+  const base = RIV[c] ? RIV[c].ali.slice() : [];
+  Object.values(rivCustom).forEach(rc => {
+    if (rc.nivel !== 'ali') return;
+    if (norm(rc.a) === c && !base.map(norm).includes(norm(rc.b))) base.push(rc.b);
+    if (norm(rc.b) === c && !base.map(norm).includes(norm(rc.a))) base.push(rc.a);
+  });
+  return base;
+}
 
 // ═══════════════════════════════════════════════════════════════════════════════
 // ESTADO GLOBAL + CONEXIÓN FIRESTORE
@@ -429,6 +507,9 @@ function conectarFirebase() {
   unsubs.push(onSnapshot(query(collection(db,'air_antecedentes'), orderBy('fecha','desc')), snap => {
     antecedentes = snap.docs.map(d => ({ id: d.id, ...d.data() })); render();
   }));
+  unsubs.push(onSnapshot(collection(db,'air_rivalidades'), snap => {
+    rivCustom = {}; snap.docs.forEach(d => rivCustom[d.id] = { id: d.id, ...d.data() }); render();
+  }));
   setTimeout(() => { document.getElementById('loading-overlay').style.display='none'; document.getElementById('app').style.display='block'; render(); }, 600);
 }
 
@@ -439,6 +520,7 @@ function aplicarPermisos() {
   const puedeVerTab = st.tab === 'u' ? currentUser?.admin : perms.includes(st.tab);
   if (!puedeVerTab) st.tab = perms[0] || 'h';
   ['h','i','p','e','v','r','n','u'].forEach(x => { const el = document.getElementById('tab-'+x); if (el) el.className = 'tab'+(st.tab===x?' active':''); });
+  actualizarTituloTab();
 }
 function iniciarApp(userKey, userData) {
   currentUser = userData;
@@ -468,8 +550,14 @@ window.setTab = t => {
   if (!puede) return;
   st.tab = t;
   ['h','i','p','e','v','r','n','u'].forEach(x => { const el = document.getElementById('tab-'+x); if(el) el.className = 'tab'+(t===x?' active':''); });
+  actualizarTituloTab();
   render();
 };
+const TITULOS_TAB = { h:'Inicio', i:'Informes de Riesgo', p:'Partes U.C.O.', e:'Equipos', v:'Rivalidades', r:'Radicalizados', n:'Noticias', u:'Usuarios y permisos' };
+function actualizarTituloTab() {
+  const el = document.getElementById('tb-title');
+  if (el) el.textContent = TITULOS_TAB[st.tab] || '';
+}
 
 const fmt = ts => { try { const d = ts?.toDate ? ts.toDate() : new Date(ts); return d.toLocaleDateString('es-AR',{day:'2-digit',month:'2-digit',year:'numeric'}); } catch(e){ return '—'; } };
 const esc = s => (s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
@@ -496,7 +584,8 @@ function sugerirRiesgo(local, visitante, opts = {}) {
   if (rel) {
     const nv = NIVELES_REL[rel];
     score += nv.pts;
-    factores.push({ t: nv.pts > 0 ? 'pos' : 'neg', txt: `${nv.pts>0?'⚔️':'🤝'} Relación directa entre parcialidades: ${nv.label} (${nv.desc}).`, pts: nv.pts });
+    const resena = getResena(L, V);
+    factores.push({ t: nv.pts > 0 ? 'pos' : 'neg', txt: `${nv.pts>0?'⚔️':'🤝'} Relación directa entre parcialidades: ${nv.label} (${nv.desc}).${resena ? ' Historial: ' + esc(resena.slice(0, 220)) + (resena.length > 220 ? '…' : '') : ''}`, pts: nv.pts });
   } else {
     factores.push({ t: 'info', txt: 'ℹ️ Sin rivalidad directa registrada entre ambas parcialidades.', pts: 0 });
   }
@@ -527,7 +616,7 @@ function sugerirRiesgo(local, visitante, opts = {}) {
       if (pa.gravedad === 'grave') { pts += d <= 90 ? 2 : 1; grav++; }
       else { if (d <= 90) pts += 1; men++; }
     });
-    antecedentes.filter(a => norm(a.club) === club).forEach(a => {
+    antecedentes.filter(a => norm(a.club) === club && a.estado !== 'pendiente').forEach(a => {
       const d = diasDesde(a.fecha); if (isNaN(d) || d > 365) return;
       if (a.gravedad === 'grave') { pts += d <= 90 ? 2 : 1; grav++; }
       else { if (d <= 90) pts += 1; men++; }
@@ -736,7 +825,7 @@ window.eliminarInforme = async id => {
 
 // Consolidado (formato DIP)
 window.generarConsolidado = () => {
-  const fins = informes.filter(i => i.estado === 'finalizado').sort((a,b) => (a.fechaPartido||'').localeCompare(b.fechaPartido||''));
+  const fins = informes.filter(i => i.estado === 'finalizado' && !i.historico).sort((a,b) => (a.fechaPartido||'').localeCompare(b.fechaPartido||''));
   if (!fins.length) { alert('No hay informes finalizados para consolidar.'); return; }
   const hoy = new Date();
   const nro = prompt('Número de Análisis de Riesgo:', String((informes.filter(i=>i.nroConsolidado).length||0) + 1));
@@ -758,16 +847,173 @@ window.generarConsolidado = () => {
   navigator.clipboard.writeText(t).then(() => alert(`✅ Informe consolidado Nro. ${nro} copiado al portapapeles (${fins.length} encuentros).`));
 };
 
+// ── IMPORTADOR DE INFORMES HISTÓRICOS (PDFs de Análisis de Riesgo anteriores) ──
+// Sube los análisis de riesgo 2024–hoy y cada partido queda en el historial
+// como informe finalizado: alimenta antecedentes por club y head-to-head.
+let histDraft = null;      // { archivo, nroAR, fechaInforme, filas: [...] }
+let histImportando = false;
+let histVerLista = false;
+
+function limpiarBoilerplateAR(texto) {
+  texto = texto.replace(/El presente Documento es de uso interno[\s\S]{0,400}?NO CONTROLADA\.?/gi, ' ');
+  texto = texto.replace(/P[áa]gina\s+\d+\s+de\s+\d+/gi, ' ');
+  texto = texto.replace(/Formulario\s+Informe de An[áa]lisis de Riesgo\s+Divisi[óo]n Informes Preventivos/gi, ' Informe de Análisis de Riesgo ');
+  return texto.replace(/\s{2,}/g, ' ').trim();
+}
+
+function parsearAnalisisRiesgo(texto) {
+  // misma limpieza anti-marca-de-agua que los partes U.C.O.
+  texto = texto.replace(/\s+/g, ' ').trim();
+  texto = texto.replace(/([a-záéíóúñ])[A-ZÁÉÍÓÚÑ](?=[a-záéíóúñ])/g, '$1');
+  for (let k = 0; k < 3; k++) texto = texto.replace(/(^|\s)[A-ZÁÉÍÓÚÑ](?=\s)/g, '$1').replace(/\s{2,}/g, ' ');
+  texto = limpiarBoilerplateAR(texto);
+
+  const nroAR = (texto.match(/An[áa]lisis de Riesgo Nro\.?\s*(\d+)/i) || [])[1] || '';
+  const mFI = texto.match(/C\.A\.B\.A\.,?\s*(\d{1,2})\s+de\s+([a-záéíóúñ]+)\s+del?\s+(\d{4})/i);
+  let fechaInforme = '';
+  if (mFI) { const mi = MESES.findIndex(m => m.toLowerCase() === mFI[2].toLowerCase()); if (mi >= 0) fechaInforme = `${mFI[3]}-${String(mi+1).padStart(2,'0')}-${String(parseInt(mFI[1])).padStart(2,'0')}`; }
+
+  // Cortar el cierre del documento
+  const finDoc = texto.search(/Sin otro particular/i);
+  const cuerpo = finDoc > 0 ? texto.slice(0, finDoc) : texto;
+
+  // Secciones: cada una arranca con "Espectáculo deportivo a celebrarse"
+  const marcas = [...cuerpo.matchAll(/Espect[áa]culo deportivo a celebrarse/gi)];
+  // Primer pase: título "crudo" de cada sección (para recortar el cuerpo de la anterior)
+  const titulosRaw = marcas.map((m, idx) => {
+    const preIni = idx === 0 ? 0 : marcas[idx-1].index;
+    const pre = cuerpo.slice(preIni, m.index);
+    // El título del club vive entre el último encabezado "Informe de Análisis de Riesgo" y la sección
+    const hs = [...pre.matchAll(/Informe de An[áa]lisis de Riesgo/gi)];
+    let t;
+    if (hs.length) {
+      const ult = hs[hs.length-1];
+      t = pre.slice(ult.index + ult[0].length).trim();
+    } else {
+      t = (pre.replace(/\s{2,}/g,' ').split(/[.!?]\s+/).pop() || '').trim();
+    }
+    return t.replace(/^([A-Z]\.\s?){2,3}\s*/,'').trim();
+  });
+  const filas = [];
+  marcas.forEach((m, idx) => {
+    const ini = m.index;
+    let fin = idx + 1 < marcas.length ? marcas[idx+1].index : cuerpo.length;
+    // Recortar antes del título de la sección siguiente (así las iniciales quedan en ESTA sección)
+    if (idx + 1 < marcas.length && titulosRaw[idx+1]) {
+      const tIdx = cuerpo.lastIndexOf(titulosRaw[idx+1], marcas[idx+1].index);
+      if (tIdx > ini) fin = tIdx;
+    }
+    const tituloLocal = titulosRaw[idx];
+
+    let body = cuerpo.slice(ini, fin).trim();
+    body = body.replace(/(?:Informe de An[áa]lisis de Riesgo\s*)+$/i, '').trim();
+    // Iniciales del analista al final de la sección
+    let iniciales = '';
+    const mIni = body.match(/\s((?:[A-Z]\.\s?){2,3}[A-Z]?\.?)\s*$/);
+    if (mIni && /^[A-Z\.\s]+$/.test(mIni[1])) { iniciales = mIni[1].replace(/\s+/g,''); body = body.slice(0, mIni.index).trim(); }
+
+    const mF = body.match(/el\s+d[íi]a\s+[a-záéíóúñ]+\s+(\d{1,2})\s+de\s+([a-záéíóúñ]+(?:\s+[a-záéíóúñ]+)?)\s+del?\s+(\d{4})/i)
+            || body.match(/el\s+(\d{1,2})\s+de\s+([a-záéíóúñ]+)\s+del?\s+(\d{4})/i);
+    let fechaPartido = '';
+    if (mF) { const mt = mF[2].replace(/\s+/g,'').toLowerCase(); const mi = MESES.findIndex(x => x.toLowerCase() === mt); if (mi >= 0) fechaPartido = `${mF[3]}-${String(mi+1).padStart(2,'0')}-${String(parseInt(mF[1])).padStart(2,'0')}`; }
+    const hora = (body.match(/a las\s+(\d{1,2}[:\.]\d{2})/i) || [])[1]?.replace('.',':') || '';
+    const visitanteCrudo = (body.match(/frente a su par,?\s*(?:el la|el|la)?\s*(.{4,70}?)\.\s*En virtud/i) || [])[1] || '';
+    const riesgoTxt = (body.match(/CONFLICTIVIDAD\s+(ALTA|MEDIA|BAJA)/i) || [])[1] || '';
+    const riesgo = { ALTA:'ALTO', MEDIA:'MEDIO', BAJA:'BAJO' }[riesgoTxt.toUpperCase()] || '';
+
+    // Reconstruir el análisis con párrafos
+    let analisis = body
+      .replace(/\.\s*En virtud de las razones/,'.\n\nEn virtud de las razones')
+      .replace(/(CONFLICTIVIDAD\s+(?:ALTA|MEDIA|BAJA)\.?)\s*/i, '$1\n\n');
+
+    filas.push({
+      incluir: true,
+      local: limpiarNombreClub(tituloLocal),
+      visitante: limpiarNombreClub(visitanteCrudo),
+      fechaPartido, hora, riesgo, iniciales, analisis,
+    });
+  });
+  return { nroAR, fechaInforme, filas };
+}
+
+window.importarInformesHistoricos = async (input) => {
+  const files = [...input.files]; if (!files.length) return;
+  input.value = '';
+  histImportando = true; render();
+  try {
+    await loadScript('https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js');
+    window.pdfjsLib.GlobalWorkerOptions.workerSrc = 'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js';
+    const todas = [];
+    let meta = { nroAR:'', fechaInforme:'', archivos: [] };
+    for (const file of files) {
+      const buf = await file.arrayBuffer();
+      const pdf = await window.pdfjsLib.getDocument({ data: buf }).promise;
+      let texto = '';
+      for (let i = 1; i <= pdf.numPages; i++) {
+        const page = await pdf.getPage(i);
+        const tc = await page.getTextContent();
+        texto += tc.items.map(it => it.str).join(' ') + ' ';
+      }
+      const r = parsearAnalisisRiesgo(texto);
+      r.filas.forEach(f => { f.nroAR = r.nroAR; f.fechaInforme = r.fechaInforme; f.archivo = file.name; });
+      todas.push(...r.filas);
+      meta.archivos.push(file.name);
+    }
+    if (!todas.length) { alert('No se detectaron secciones de análisis en los PDF. Verificá que sean informes de Análisis de Riesgo del formato DIP.'); histImportando = false; render(); return; }
+    histDraft = { filas: todas, archivos: meta.archivos };
+  } catch (e) {
+    alert('No se pudieron leer los PDF: ' + e.message);
+    histDraft = null;
+  }
+  histImportando = false; render();
+};
+
+window.setHistIncluir = (i, on) => { if (histDraft) histDraft.filas[i].incluir = on; };
+window.setHistCampo = (i, campo, val) => { if (histDraft) histDraft.filas[i][campo] = campo==='local'||campo==='visitante' ? norm(val) : val; };
+window.cancelarHist = () => { histDraft = null; render(); };
+window.guardarHistoricos = async () => {
+  const sel = histDraft.filas.filter(f => f.incluir);
+  if (!sel.length) { alert('No hay filas seleccionadas.'); return; }
+  const invalidas = sel.filter(f => !f.local || !f.visitante || !f.riesgo);
+  if (invalidas.length) { alert(`Hay ${invalidas.length} fila(s) sin equipo o sin conflictividad. Completalas o desmarcalas.`); return; }
+  // evitar duplicados exactos ya cargados
+  let guardadas = 0, dupes = 0;
+  for (const f of sel) {
+    const ya = informes.some(i => i.historico && norm(i.local) === norm(f.local) && norm(i.visitante) === norm(f.visitante) && i.fechaPartido === f.fechaPartido);
+    if (ya) { dupes++; continue; }
+    await addDoc(collection(db,'air_informes'), {
+      estado:'finalizado', historico:true,
+      local: norm(f.local), visitante: norm(f.visitante),
+      fechaPartido: f.fechaPartido || '', hora: f.hora || '',
+      riesgo: f.riesgo, analisis: f.analisis || '', iniciales: f.iniciales || '',
+      nroAR: f.nroAR || '', archivo: f.archivo || '',
+      creado: serverTimestamp(),
+    });
+    guardadas++;
+  }
+  histDraft = null; render();
+  alert(`✅ ${guardadas} informe(s) histórico(s) cargados al historial.${dupes ? ` Se omitieron ${dupes} duplicados.` : ''} El motor de riesgo ya los pondera como antecedentes.`);
+};
+window.eliminarHistorico = async id => {
+  if (!confirm('¿Eliminar este informe histórico del historial?')) return;
+  await deleteDoc(doc(db,'air_informes', id));
+};
+window.toggleHistLista = () => { histVerLista = !histVerLista; render(); };
+
 // ── PDF institucional (formato DIP con escudos) ──────────────────────────────
 window.generarConsolidadoPDF = async () => {
-  const fins = informes.filter(i => i.estado === 'finalizado').sort((a,b) => (a.fechaPartido||'').localeCompare(b.fechaPartido||''));
+  const fins = informes.filter(i => i.estado === 'finalizado' && !i.historico).sort((a,b) => (a.fechaPartido||'').localeCompare(b.fechaPartido||''));
   if (!fins.length) { alert('No hay informes finalizados para consolidar.'); return; }
   const nro = prompt('Número de Análisis de Riesgo:', '1');
   if (nro === null) return;
-  const firmante = prompt('Firmante:', 'Comisario Leandro Darío ESTEVEZ');
+  // Firma editable: recuerda el último firmante/cargo usados en este dispositivo
+  let firmaDef = { nombre:'Comisario Leandro Darío ESTEVEZ', cargo:'Jefe División Informes Preventivos' };
+  try { firmaDef = JSON.parse(localStorage.getItem('air_firma')) || firmaDef; } catch(e){}
+  const firmante = prompt('Firmante:', firmaDef.nombre);
   if (firmante === null) return;
-  const cargo = prompt('Cargo del firmante:', 'Jefe División Informes Preventivos');
+  const cargo = prompt('Cargo del firmante:', firmaDef.cargo);
   if (cargo === null) return;
+  try { localStorage.setItem('air_firma', JSON.stringify({ nombre: firmante.trim(), cargo: cargo.trim() })); } catch(e){}
 
   await loadScript('https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js');
   const { jsPDF } = window.jspdf;
@@ -1035,7 +1281,7 @@ function renderTabInformes() {
 
   const hoyISO = new Date().toISOString().slice(0,10);
   let lista = fixture.slice();
-  const fins = informes.filter(i => i.estado === 'finalizado');
+  const fins = informes.filter(i => i.estado === 'finalizado' && !i.historico);
   if (st.filtroInformes === 'pendientes') lista = lista.filter(p => { const i = informeDePartido(p.id); return !i || i.estado !== 'finalizado'; });
   if (st.filtroInformes === 'finalizados') lista = lista.filter(p => informeDePartido(p.id)?.estado === 'finalizado');
 
@@ -1066,21 +1312,78 @@ function renderTabInformes() {
       <div style="display:flex;gap:5px">
         ${['pendientes','finalizados','todos'].map(f => `<button class="btn-mini" style="${st.filtroInformes===f?'background:#0C447C;color:#fff;border-color:#0C447C':''}" onclick="setFiltroInformes('${f}')">${f[0].toUpperCase()+f.slice(1)}</button>`).join('')}
       </div>
-      <div style="display:flex;gap:6px">
+      <div style="display:flex;gap:6px;flex-wrap:wrap">
         <button class="btn-mini" style="background:#0C447C;color:#fff;border-color:#0C447C" onclick="generarConsolidadoPDF()">📕 PDF institucional (${fins.length})</button>
         <button class="btn-mini" style="background:#059669;color:#fff;border-color:#047857" onclick="generarConsolidado()">📄 Copiar texto consolidado</button>
+        <label class="btn-mini" style="cursor:pointer;background:#7c3aed;color:#fff;border-color:#6d28d9">📥 Importar históricos (PDF)<input type="file" accept=".pdf" multiple onchange="importarInformesHistoricos(this)" style="display:none"></label>
         <button class="btn-mini" style="background:#0C447C;color:#fff;border-color:#0C447C" onclick="abrirFormPartido()">➕ Cargar partido</button>
       </div>
     </div>
+    ${histImportando ? `<div class="fc" style="text-align:center;color:#6b7280">⏳ Leyendo PDF de análisis de riesgo...</div>` : ''}
+    ${histPreviewHtml()}
+    ${histListaHtml()}
     ${formHtml}
     ${lista.length ? cards : `<div class="empty">📋 No hay partidos ${st.filtroInformes==='pendientes'?'pendientes de análisis':'en este filtro'}. Cargá el fixture con el botón ➕.</div>`}`;
+}
+
+// Vista previa de la importación de históricos
+function histPreviewHtml() {
+  if (!histDraft) return '';
+  return `
+  <div class="fc" style="border:2px solid #7c3aed">
+    <div style="display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:8px">
+      <div>
+        <div style="font-size:15px;font-weight:700">📥 Vista previa — ${histDraft.filas.length} partido(s) detectados en ${histDraft.archivos.length} PDF</div>
+        <div style="font-size:11.5px;color:#6b7280;margin-top:2px">Revisá equipos, fecha y conflictividad. Corregí lo que haga falta y desmarcá lo que no quieras cargar.</div>
+      </div>
+      <div style="display:flex;gap:6px">
+        <button class="btn-main" style="flex:none;padding:8px 16px" onclick="guardarHistoricos()">💾 Cargar al historial</button>
+        <button class="btn-mini" style="padding:8px 12px" onclick="cancelarHist()">Cancelar</button>
+      </div>
+    </div>
+    <div style="margin-top:10px;display:flex;flex-direction:column;gap:8px">
+      ${histDraft.filas.map((f, i) => `
+        <div style="display:grid;grid-template-columns:28px 1fr 1fr 120px 90px 90px;gap:6px;align-items:center;padding:8px;background:${f.incluir!==false?'#faf5ff':'#f9fafb'};border:1px solid #e9d5ff;border-radius:8px;font-size:12px">
+          <input type="checkbox" ${f.incluir!==false?'checked':''} onchange="setHistIncluir(${i}, this.checked)" style="width:16px;height:16px;accent-color:#7c3aed">
+          <input list="lista-clubes" value="${esc(f.local)}" onchange="setHistCampo(${i},'local',this.value)" style="font-size:12px;padding:5px 8px;text-transform:uppercase">
+          <input list="lista-clubes" value="${esc(f.visitante)}" onchange="setHistCampo(${i},'visitante',this.value)" style="font-size:12px;padding:5px 8px;text-transform:uppercase">
+          <input type="date" value="${esc(f.fechaPartido)}" onchange="setHistCampo(${i},'fechaPartido',this.value)" style="font-size:12px;padding:5px 6px">
+          <select onchange="setHistCampo(${i},'riesgo',this.value)" style="font-size:12px;padding:5px 4px">
+            ${['ALTO','MEDIO','BAJO'].map(r => `<option ${f.riesgo===r?'selected':''} ${!f.riesgo&&r==='BAJO'?'':''}>${r}</option>`).join('')}
+            ${!f.riesgo ? '<option selected value="">¿?</option>' : ''}
+          </select>
+          <span style="color:#6b7280">${esc(f.iniciales||'—')} ${f.nroAR ? '· AR '+esc(f.nroAR) : ''}</span>
+        </div>`).join('')}
+    </div>
+    <datalist id="lista-clubes">${CLUBES.map(c=>`<option value="${c}">`).join('')}</datalist>
+  </div>`;
+}
+
+// Listado de históricos ya cargados (colapsable)
+function histListaHtml() {
+  const hist = informes.filter(i => i.historico).sort((a,b) => (b.fechaPartido||'').localeCompare(a.fechaPartido||''));
+  if (!hist.length) return '';
+  return `
+  <div class="fc">
+    <div style="display:flex;justify-content:space-between;align-items:center;cursor:pointer" onclick="toggleHistLista()">
+      <div style="font-size:13.5px;font-weight:700">📚 Informes históricos cargados (${hist.length}) <span style="font-weight:400;font-size:11.5px;color:#6b7280">— alimentan antecedentes y head-to-head</span></div>
+      <span style="color:#9ca3af">${histVerLista ? '▲' : '▼'}</span>
+    </div>
+    ${histVerLista ? `<div style="margin-top:10px;display:flex;flex-direction:column;gap:6px">
+      ${hist.map(i => `
+        <div class="rc ${(i.riesgo||'').toLowerCase()}" style="padding:8px 12px;display:flex;justify-content:space-between;align-items:center;gap:8px;flex-wrap:wrap;font-size:12.5px">
+          <div><b>${esc(i.local)}</b> vs <b>${esc(i.visitante)}</b> · ${fmt(i.fechaPartido)} · <span class="bdg bdg-${i.riesgo}" style="font-size:10px">${i.riesgo}</span>${i.nroAR ? ' · AR Nro. '+esc(i.nroAR) : ''}${i.iniciales ? ' · '+esc(i.iniciales) : ''}</div>
+          <button class="btn-mini" style="color:#b91c1c" onclick="eliminarHistorico('${i.id}')">🗑</button>
+        </div>`).join('')}
+    </div>` : ''}
+  </div>`;
 }
 
 // ═══════════════════════════════════════════════════════════════════════════════
 // TAB EQUIPOS — Historial y perfil
 // ═══════════════════════════════════════════════════════════════════════════════
-window.abrirEquipo = c => { st.equipoAbierto = c; render(); window.scrollTo(0,0); };
-window.cerrarEquipo = () => { st.equipoAbierto = null; render(); };
+window.abrirEquipo = c => { st.equipoAbierto = c; st.formAnt = false; render(); window.scrollTo(0,0); };
+window.cerrarEquipo = () => { st.equipoAbierto = null; st.formAnt = false; render(); };
 window.guardarEquipo = async () => {
   const c = st.equipoAbierto; if (!c) return;
   await setDoc(doc(db,'air_equipos', c), {
@@ -1095,6 +1398,35 @@ window.guardarEquipo = async () => {
   }, { merge: true });
   alert('✅ Perfil del equipo actualizado. El motor de riesgo ya lo tiene en cuenta.');
 };
+
+// ── Evolución de riesgo por club: sparkline SVG con los últimos 10 informes ──
+function sparklineRiesgoHtml(hist) {
+  const NIVEL_VAL = { BAJO:1, MEDIO:2, ALTO:3 };
+  const COL = { BAJO:'#16a34a', MEDIO:'#eab308', ALTO:'#dc2626' };
+  const pts = hist.filter(i => i.riesgo && NIVEL_VAL[i.riesgo])
+    .sort((a,b) => (a.fechaPartido||'').localeCompare(b.fechaPartido||''))
+    .slice(-10);
+  if (pts.length < 2) return '';
+  const W = 640, H = 88, PADX = 34, PADY = 16;
+  const x = i => PADX + i * (W - PADX*2) / (pts.length - 1);
+  const y = v => H - PADY - (v - 1) * (H - PADY*2) / 2;
+  const poly = pts.map((p, i) => `${x(i).toFixed(1)},${y(NIVEL_VAL[p.riesgo]).toFixed(1)}`).join(' ');
+  const ult = pts[pts.length-1], primero = pts[0];
+  const tendencia = NIVEL_VAL[ult.riesgo] - NIVEL_VAL[primero.riesgo];
+  return `<div class="fc">
+    <div style="display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:6px;margin-bottom:4px">
+      <div class="sec-label" style="margin:0">📈 Evolución de la conflictividad (últimos ${pts.length} informes)</div>
+      <span style="font-size:11px;font-weight:700;color:${tendencia>0?'#dc2626':tendencia<0?'#16a34a':'#6b7280'}">${tendencia>0?'▲ en escalada':tendencia<0?'▼ en descenso':'▬ estable'}</span>
+    </div>
+    <svg viewBox="0 0 ${W} ${H}" style="width:100%;height:auto;display:block">
+      ${[['ALTO',3],['MEDIO',2],['BAJO',1]].map(([r,v]) => `<line x1="${PADX}" y1="${y(v)}" x2="${W-PADX}" y2="${y(v)}" stroke="#f3f4f6" stroke-width="1"/><text x="4" y="${y(v)+3.5}" font-size="9" font-weight="700" fill="${COL[r]}">${r}</text>`).join('')}
+      <polyline points="${poly}" fill="none" stroke="#0C447C" stroke-width="2" stroke-linejoin="round"/>
+      ${pts.map((p, i) => `<circle cx="${x(i)}" cy="${y(NIVEL_VAL[p.riesgo])}" r="4.5" fill="${COL[p.riesgo]}" stroke="#fff" stroke-width="1.5"><title>${esc(p.local)} vs ${esc(p.visitante)} — ${fmt(p.fechaPartido)} — ${p.riesgo}</title></circle>`).join('')}
+      <text x="${x(0)}" y="${H-2}" font-size="8.5" fill="#9ca3af" text-anchor="middle">${fmt(primero.fechaPartido)}</text>
+      <text x="${x(pts.length-1)}" y="${H-2}" font-size="8.5" fill="#9ca3af" text-anchor="middle">${fmt(ult.fechaPartido)}</text>
+    </svg>
+  </div>`;
+}
 
 function renderTabEquipos() {
   if (st.equipoAbierto) {
@@ -1157,13 +1489,28 @@ function renderTabEquipos() {
       ${(() => {
         const pAnt = partes.filter(pa => norm(pa.local) === c || norm(pa.visitante) === c);
         const nAnt = antecedentes.filter(a => norm(a.club) === c);
-        if (!pAnt.length && !nAnt.length) return '';
+        const formAntHtml = st.formAnt ? `
+          <div style="background:#f9fafb;border:1px solid #e5e7eb;border-radius:10px;padding:10px 12px;margin:8px 0">
+            <div class="fr">
+              <div><div class="sec-label">Fecha *</div><input type="date" id="am-fecha" value="${new Date().toISOString().slice(0,10)}"></div>
+              <div><div class="sec-label">Gravedad</div><select id="am-grav"><option value="menor">🟡 Menor</option><option value="grave">🔴 Grave</option></select></div>
+              <div><div class="sec-label">Fuente</div><input type="text" id="am-fuente" placeholder="Ej: Parte DSED, Olé, testigo directo"></div>
+            </div>
+            <div class="fr fr1"><div><div class="sec-label">Detalle del antecedente *</div><input type="text" id="am-titulo" placeholder="Ej: Enfrentamiento entre facciones en la previa, 3 demorados"></div></div>
+            <div class="fr fr1"><div><div class="sec-label">Link (opcional)</div><input type="url" id="am-link" placeholder="https://..."></div></div>
+            <div class="btns-row"><button class="btn-main" onclick="guardarAntecedenteManual('${c.replace(/'/g,"\\'")}')">💾 Guardar antecedente</button><button class="btn-sn" onclick="toggleFormAnt()">Cancelar</button></div>
+          </div>` : '';
         return `<div class="fc">
-          <div class="sec-label" style="margin-bottom:8px">🗂️ Antecedentes operativos (${pAnt.length + nAnt.length})</div>
+          <div style="display:flex;justify-content:space-between;align-items:center;gap:8px;flex-wrap:wrap;margin-bottom:8px">
+            <div class="sec-label" style="margin:0">🗂️ Antecedentes operativos (${pAnt.length + nAnt.length})</div>
+            <button class="btn-mini" onclick="toggleFormAnt()">${st.formAnt ? '✕ Cerrar' : '➕ Cargar antecedente'}</button>
+          </div>
+          ${formAntHtml}
           ${pAnt.slice(0,10).map(pa => { const gv = GRAVEDADES[pa.gravedad] || GRAVEDADES.sin; return `<div style="font-size:12px;padding:6px 0;border-bottom:1px solid #f3f4f6;display:flex;justify-content:space-between;gap:8px;flex-wrap:wrap"><span>📄 ${fmt(pa.fecha)} — ${esc(pa.local)} vs ${esc(pa.visitante)}${pa.nro?' (U.C.O. '+esc(pa.nro)+')':''}</span><span style="font-size:11px;padding:2px 8px;border-radius:12px;background:${gv.bg};color:${gv.fg};font-weight:700">${gv.label}</span></div>`; }).join('')}
-          ${nAnt.slice(0,10).map(a => `<div style="font-size:12px;padding:6px 0;border-bottom:1px solid #f3f4f6;display:flex;justify-content:space-between;gap:8px;flex-wrap:wrap"><span>📰 ${fmt(a.fecha)} — <a href="${a.link}" target="_blank" style="color:#0C447C">${esc((a.titulo||'').slice(0,80))}</a></span><span style="display:flex;gap:6px;align-items:center"><span style="font-size:11px;padding:2px 8px;border-radius:12px;background:${a.gravedad==='grave'?'#fee2e2':'#fef9c3'};color:${a.gravedad==='grave'?'#991b1b':'#854d0e'};font-weight:700">${a.gravedad==='grave'?'🔴 grave':'🟡 menor'}</span><button class="btn-mini" style="color:#b91c1c;padding:1px 7px" onclick="eliminarAntecedente('${a.id}')">🗑</button></span></div>`).join('')}
+          ${nAnt.slice(0,10).map(a => `<div style="font-size:12px;padding:6px 0;border-bottom:1px solid #f3f4f6;display:flex;justify-content:space-between;gap:8px;flex-wrap:wrap"><span>📰 ${fmt(a.fecha)} — ${a.link ? `<a href="${esc(a.link)}" target="_blank" style="color:#0C447C">${esc((a.titulo||'').slice(0,80))}</a>` : esc((a.titulo||'').slice(0,80))}${a.fuente ? ` <span style="color:#9ca3af;font-size:10.5px">· ${esc(a.fuente)}</span>` : ''}</span><span style="display:flex;gap:6px;align-items:center">${a.estado==='pendiente'?'<span style="font-size:10.5px;padding:2px 8px;border-radius:12px;background:#fef3c7;color:#92400e;font-weight:700">⏳ sin validar</span>':''}<span style="font-size:11px;padding:2px 8px;border-radius:12px;background:${a.gravedad==='grave'?'#fee2e2':'#fef9c3'};color:${a.gravedad==='grave'?'#991b1b':'#854d0e'};font-weight:700">${a.gravedad==='grave'?'🔴 grave':'🟡 menor'}</span><button class="btn-mini" style="color:#b91c1c;padding:1px 7px" onclick="eliminarAntecedente('${a.id}')">🗑</button></span></div>`).join('')}
         </div>`;
       })()}
+      ${sparklineRiesgoHtml(hist)}
       <div class="sec-label" style="margin:16px 0 8px">📚 Historial de informes de riesgo (${hist.length})</div>
       ${histHtml}`;
   }
@@ -1214,27 +1561,94 @@ function renderTabEquipos() {
 window.setRivA = v => { st.rivA = v; render(); };
 window.setRivB = v => { st.rivB = v; render(); };
 
+let rivEdit = false;
+const NIVELES_EDIT = [
+  ['max','⚔️ Rivalidad máxima (clásico)'],
+  ['enem','🔥 Enemistad'],
+  ['conf','⚠️ Conflicto'],
+  ['tens','🟡 Tensión'],
+  ['resp','🤝 Respeto / buena relación'],
+  ['ali','🔗 Alianza / amistad entre barras'],
+  ['ninguna','⬜ Sin relación'],
+];
+window.toggleRivEdit = () => { rivEdit = !rivEdit; render(); };
+window.guardarRivalidad = async () => {
+  const A = norm(st.rivA), B = norm(st.rivB);
+  if (!A || !B || A === B) { alert('Seleccioná dos clubes distintos.'); return; }
+  const nivel = document.getElementById('riv-nivel').value;
+  const resena = document.getElementById('riv-resena').value.trim();
+  await setDoc(doc(db,'air_rivalidades', rivKey(A, B)), { a: A, b: B, nivel, resena, actualizado: serverTimestamp(), por: currentUser?.id || '' });
+  rivEdit = false; render();
+};
+window.eliminarRivalidad = async () => {
+  const A = norm(st.rivA), B = norm(st.rivB);
+  const cust = getCustomRel(A, B);
+  if (!cust) return;
+  if (!confirm('¿Quitar el registro personalizado y volver a la base del sistema?')) return;
+  await deleteDoc(doc(db,'air_rivalidades', cust.id));
+  rivEdit = false; render();
+};
+
 function renderTabRivalidades() {
   const A = norm(st.rivA), B = norm(st.rivB);
   let resultado = '';
   if (A && B && A !== B) {
+    const cust = getCustomRel(A, B);
     const rel = getRelacion(A, B);
+    const esAli = cust?.nivel === 'ali' || getAlianzas(A).map(norm).includes(B);
     const nv = rel ? NIVELES_REL[rel] : null;
     const sug = sugerirRiesgo(A, B, {});
+    const resena = getResena(A, B);
     const cruces = [];
     getAlianzas(A).forEach(ali => { if (esRival(ali,B)) cruces.push(`Barra de <b>${A}</b> aliada de <b>${norm(ali)}</b> → rival de <b>${B}</b>`); });
     getAlianzas(B).forEach(ali => { if (esRival(ali,A)) cruces.push(`Barra de <b>${B}</b> aliada de <b>${norm(ali)}</b> → rival de <b>${A}</b>`); });
+
+    // Historial operativo entre ambos: partes U.C.O. + informes finalizados de este emparejamiento
+    const h2hP = partes.filter(pa => { const x = norm(pa.local), y = norm(pa.visitante); return (x===A&&y===B)||(x===B&&y===A); })
+      .sort((x,y) => (y.fecha||'').localeCompare(x.fecha||''));
+    const h2hI = informes.filter(i => { if (i.estado!=='finalizado') return false; const x = norm(i.local), y = norm(i.visitante); return (x===A&&y===B)||(x===B&&y===A); })
+      .sort((x,y) => (y.fechaPartido||'').localeCompare(x.fechaPartido||''));
+
+    const histHtml = (h2hP.length || h2hI.length) ? `
+      <div style="margin-top:14px;text-align:left">
+        <div class="sec-label">📚 Historial operativo entre ambos</div>
+        ${h2hP.map(pa => `<div class="factor ${pa.gravedad==='sin'?'neg':'pos'}" style="font-size:12px">${GRAVEDADES[pa.gravedad]?.label || pa.gravedad} — ${fmt(pa.fecha)}${pa.nro ? ' · Informe U.C.O. Nro. '+esc(pa.nro) : ''}${pa.detalle && pa.gravedad!=='sin' ? '<br><span style="color:#6b7280">'+esc(pa.detalle.slice(0,180))+(pa.detalle.length>180?'…':'')+'</span>' : ''}</div>`).join('')}
+        ${h2hI.map(i => `<div class="factor info" style="font-size:12px">📋 Análisis de riesgo previo: <b>CONFLICTIVIDAD ${i.riesgo}</b> — ${fmt(i.fechaPartido)}</div>`).join('')}
+      </div>` : '';
+
+    const editHtml = rivEdit ? `
+      <div style="margin-top:14px;padding:14px;background:#f8fafc;border:1px solid #e2e8f0;border-radius:12px;text-align:left">
+        <div class="sec-label">✏️ Registrar relación e historial — ${A} vs ${B}</div>
+        <div class="fr fr1" style="margin-top:6px">
+          <div><div class="sec-label">Nivel de relación</div>
+            <select id="riv-nivel">${NIVELES_EDIT.map(([k,l]) => `<option value="${k}" ${((cust?.nivel) || rel || (esAli?'ali':'ninguna')) === k ? 'selected' : ''}>${l}</option>`).join('')}</select>
+          </div>
+        </div>
+        <div class="sec-label">Reseña del historial (peleas, hechos, años, contexto — se muestra en el análisis)</div>
+        <textarea id="riv-resena" style="min-height:100px" placeholder="Ej: Clásico del ascenso. Enfrentamientos entre facciones en los años 2005/2006 en Floresta e Isidro Casanova; última pelea registrada en la vía pública en...">${esc(cust?.resena || '')}</textarea>
+        <div class="btns-row" style="margin-top:10px">
+          <button class="btn-main" style="flex:none;padding:9px 18px" onclick="guardarRivalidad()">💾 Guardar</button>
+          ${cust ? `<button class="btn-mini" style="padding:9px 14px;color:#b91c1c;border-color:#fca5a5" onclick="eliminarRivalidad()">🗑 Volver a la base</button>` : ''}
+          <button class="btn-mini" style="padding:9px 14px" onclick="toggleRivEdit()">Cancelar</button>
+        </div>
+      </div>` : '';
+
     resultado = `
       <div class="fc" style="text-align:center">
         <div style="font-size:15px;font-weight:700;margin-bottom:10px">${A} <span style="color:#9ca3af">vs</span> ${B}</div>
-        <span class="rel-badge" style="background:${nv?nv.color:'#9ca3af'}">${nv ? nv.label : 'SIN RELACIÓN DIRECTA REGISTRADA'}</span>
+        <span class="rel-badge" style="background:${nv?nv.color:(esAli?'#0284c7':'#9ca3af')}">${nv ? nv.label : (esAli ? 'ALIANZA / AMISTAD' : 'SIN RELACIÓN DIRECTA REGISTRADA')}</span>
+        ${cust ? '<div style="font-size:10.5px;color:#0284c7;margin-top:4px">✏️ Relación cargada por el área (pisa la base del sistema)</div>' : ''}
         ${nv ? `<div style="font-size:12px;color:#6b7280;margin-top:8px">${nv.desc}</div>` : ''}
+        ${resena ? `<div style="margin-top:10px;text-align:left;background:#fffbeb;border:1px solid #fde68a;border-radius:10px;padding:10px 12px;font-size:12.5px;color:#374151"><b>📖 Historial:</b> ${esc(resena)}</div>` : ''}
         ${cruces.length ? `<div style="margin-top:12px;text-align:left">${cruces.map(c=>`<div class="factor pos">🔗 ${c}</div>`).join('')}</div>` : ''}
+        ${histHtml}
         <div style="margin-top:12px;font-size:12px;color:#374151">Sugerencia base del sistema para este cruce: <span class="bdg bdg-${sug.riesgo}">${sug.riesgo}</span> <span style="color:#9ca3af">(sin datos del encuentro)</span></div>
+        <div style="margin-top:10px"><button class="btn-mini" onclick="toggleRivEdit()">${cust ? '✏️ Editar relación / historial' : '➕ Registrar relación / historial'}</button></div>
+        ${editHtml}
       </div>`;
   }
   const fichas = [A, B].filter(Boolean).map(c => {
-    const r = RIV[c]; if (!r) return `<div class="fc"><b>${c}</b><div style="font-size:12px;color:#9ca3af;margin-top:4px">Sin datos cargados.</div></div>`;
+    const r = RIV[c]; if (!r) return `<div class="fc"><b>${c}</b><div style="font-size:12px;color:#9ca3af;margin-top:4px">Sin datos cargados en la base. Podés registrar relaciones con el botón de arriba.</div></div>`;
     const pill = (arr, color, bg) => arr.map(x=>`<span class="club-pill" style="border-color:${color};color:${color};background:${bg}">${x}</span>`).join('') || '<span style="font-size:11px;color:#9ca3af">—</span>';
     return `<div class="fc">
       <div style="font-size:14px;font-weight:700;margin-bottom:8px">${c}</div>
@@ -1251,11 +1665,11 @@ function renderTabRivalidades() {
     <div class="fc">
       <div class="sec-label" style="margin-bottom:8px">⚔️ Consultar relación entre dos parcialidades</div>
       <div class="fr fr2">
-        <div><div class="sec-label">Club A</div><input list="dl-clubes3" value="${esc(st.rivA)}" onchange="setRivA(this.value)" placeholder="Ej: DEFENSORES DE BELGRANO"></div>
-        <div><div class="sec-label">Club B</div><input list="dl-clubes3" value="${esc(st.rivB)}" onchange="setRivB(this.value)" placeholder="Ej: DEPORTIVO MORON"></div>
+        <div><div class="sec-label">Club A</div><input list="dl-clubes3" value="${esc(st.rivA)}" onchange="setRivA(this.value)" placeholder="Ej: ALL BOYS"></div>
+        <div><div class="sec-label">Club B</div><input list="dl-clubes3" value="${esc(st.rivB)}" onchange="setRivB(this.value)" placeholder="Ej: ALMIRANTE BROWN"></div>
       </div>
       <datalist id="dl-clubes3">${CLUBES.map(c=>`<option value="${c}">`).join('')}</datalist>
-      <div style="font-size:11px;color:#9ca3af">Base: mapa de rivalidades entre barras del fútbol argentino (Primera, Nacional, B Metro, C y regionales) + alianzas y amistades. Los perfiles de equipo (pestaña Equipos) suman internas e incidentes recientes al cálculo.</div>
+      <div style="font-size:11px;color:#9ca3af">Base: mapa de rivalidades entre barras + alianzas. Con el botón "Registrar relación / historial" podés corregir un nivel o sumar la reseña de peleas y hechos entre dos parcialidades: pisa la base y el motor la usa en el análisis.</div>
     </div>
     ${resultado}
     ${fichas}`;
@@ -1396,13 +1810,40 @@ window.guardarAntecedenteNoticia = async idx => {
   await addDoc(collection(db,'air_antecedentes'), {
     club: clubN, fecha, gravedad,
     titulo: n.titulo || '', link: n.link || '', fuente: n.fuente || 'noticia',
-    ts: serverTimestamp(),
+    estado: 'validado', ts: serverTimestamp(),
   });
 };
 window.eliminarAntecedente = async id => {
   if (!confirm('¿Eliminar este antecedente?')) return;
   await deleteDoc(doc(db,'air_antecedentes', id));
 };
+
+// ── Validación de antecedentes de la ingesta automática ─────────────────────
+window.aprobarAntecedente = async id => {
+  const a = antecedentes.find(x => x.id === id); if (!a) return;
+  await updateDoc(doc(db,'air_antecedentes', id), { estado:'validado', validadoPor: currentUser?.id || '' });
+};
+window.descartarAntecedente = async id => {
+  if (!confirm('¿Descartar esta noticia? No va a ponderar en el motor y se elimina.')) return;
+  await deleteDoc(doc(db,'air_antecedentes', id));
+};
+window.setGravedadAntecedente = async (id, g) => { await updateDoc(doc(db,'air_antecedentes', id), { gravedad: g }); };
+window.setClubAntecedente = async (id, club) => { const c = norm(club); if (c) await updateDoc(doc(db,'air_antecedentes', id), { club: c }); };
+
+// ── Alta manual de antecedente (con fuente y link) desde el perfil de equipo ─
+window.guardarAntecedenteManual = async club => {
+  const g = id => document.getElementById(id)?.value?.trim() || '';
+  const fecha = g('am-fecha'), titulo = g('am-titulo');
+  if (!fecha || !titulo) { alert('Completá al menos fecha y detalle del antecedente.'); return; }
+  await addDoc(collection(db,'air_antecedentes'), {
+    club: norm(club), fecha,
+    gravedad: g('am-grav') === 'grave' ? 'grave' : 'menor',
+    titulo, fuente: g('am-fuente') || 'carga manual', link: g('am-link') || '',
+    estado: 'validado', ts: serverTimestamp(),
+  });
+  st.formAnt = false; render();
+};
+window.toggleFormAnt = () => { st.formAnt = !st.formAnt; render(); };
 
 // ═══════════════════════════════════════════════════════════════════════════════
 // TAB RADICALIZADOS — CRUD sobre la colección existente (radicalizados_copa)
@@ -1562,6 +2003,51 @@ function renderTabInicio() {
   const fins = informes.filter(i => i.estado === 'finalizado');
   const porRiesgo = r => fins.filter(i => i.riesgo === r).length;
 
+  // ── Semáforo del fixture: todos los partidos futuros, agrupados por fecha ──
+  const SEM_COLORES = { ALTO:'#dc2626', MEDIO:'#eab308', BAJO:'#16a34a' };
+  const futuros = fixture.filter(p => p.fecha >= hoyISO).sort((a,b) => (a.fecha||'').localeCompare(b.fecha||''));
+  const porFecha = {};
+  futuros.forEach(p => { (porFecha[p.fecha] = porFecha[p.fecha] || []).push(p); });
+  const semaforoHtml = futuros.length ? Object.keys(porFecha).sort().map(f => {
+    const d = new Date(f + 'T12:00:00');
+    const chips = porFecha[f].map(p => {
+      const inf = informeDePartido(p.id);
+      const r = inf ? inf.riesgo : sugerirRiesgo(p.local, p.visitante, { visitantePermitida:p.visitantePermitida, internacional:p.internacional, hora:p.hora, fecha:p.fecha }).riesgo;
+      const col = SEM_COLORES[r] || '#9ca3af';
+      const fin = inf?.estado === 'finalizado';
+      return `<span onclick="setTab('i');abrirAnalisis('${p.id}')" title="${p.local} vs ${p.visitante} — ${r}${fin?' (informe finalizado)':' (sugerencia)'}" style="display:inline-flex;align-items:center;gap:6px;padding:4px 10px;border-radius:14px;font-size:11.5px;font-weight:700;cursor:pointer;border:1.5px solid ${col};${fin?`background:${col};color:#fff`:`background:#fff;color:${col}`}">
+        <span style="width:8px;height:8px;border-radius:50%;background:${fin?'#fff':col}"></span>${p.local.split(' ')[0]} vs ${p.visitante.split(' ')[0]}${p.hora?` · ${p.hora}`:''}</span>`;
+    }).join('');
+    return `<div style="display:flex;gap:10px;align-items:flex-start;padding:7px 0;border-bottom:1px solid #f3f4f6">
+      <div style="flex:0 0 88px;font-size:11px;font-weight:700;color:#374151;padding-top:5px">${DIAS[d.getDay()].slice(0,3).toUpperCase()} ${d.getDate()}/${d.getMonth()+1}</div>
+      <div style="display:flex;gap:6px;flex-wrap:wrap">${chips}</div>
+    </div>`;
+  }).join('') : '';
+
+  // ── Antecedentes pendientes de validación (ingesta automática) ──
+  const antPend = antecedentes.filter(a => a.estado === 'pendiente');
+  const antPendHtml = antPend.length ? `
+    <div class="fc" style="border:2px solid #d97706;background:#fffbeb">
+      <div class="sec-label" style="margin-bottom:8px">📥 Ingesta automática — ${antPend.length} noticia${antPend.length!==1?'s':''} pendiente${antPend.length!==1?'s':''} de validación <span style="font-weight:400;font-size:11px;color:#92400e">(no ponderan en el motor hasta que las apruebes)</span></div>
+      ${antPend.slice(0,15).map(a => `
+        <div style="padding:8px 0;border-bottom:1px solid #fde68a;font-size:12px">
+          <div style="display:flex;justify-content:space-between;gap:8px;flex-wrap:wrap;align-items:center">
+            <span>📰 ${fmt(a.fecha)} — ${a.link ? `<a href="${esc(a.link)}" target="_blank" style="color:#0C447C">${esc((a.titulo||'').slice(0,90))}</a>` : esc((a.titulo||'').slice(0,90))} <span style="color:#92400e;font-size:10.5px">· ${esc(a.fuente||'')}</span></span>
+          </div>
+          <div style="display:flex;gap:6px;flex-wrap:wrap;align-items:center;margin-top:5px">
+            <input list="lista-clubes-sem" value="${esc(a.club||'')}" onchange="setClubAntecedente('${a.id}', this.value)" style="font-size:11.5px;padding:4px 8px;width:200px;text-transform:uppercase" title="Club vinculado">
+            <select onchange="setGravedadAntecedente('${a.id}', this.value)" style="font-size:11.5px;padding:4px">
+              <option value="menor" ${a.gravedad!=='grave'?'selected':''}>🟡 menor</option>
+              <option value="grave" ${a.gravedad==='grave'?'selected':''}>🔴 grave</option>
+            </select>
+            <button class="btn-mini" style="background:#059669;color:#fff;border-color:#047857" onclick="aprobarAntecedente('${a.id}')">✅ Aprobar</button>
+            <button class="btn-mini" style="color:#b91c1c" onclick="descartarAntecedente('${a.id}')">🗑 Descartar</button>
+          </div>
+        </div>`).join('')}
+      ${antPend.length > 15 ? `<div style="font-size:11px;color:#92400e;margin-top:6px">… y ${antPend.length-15} más.</div>` : ''}
+      <datalist id="lista-clubes-sem">${CLUBES.map(c=>`<option value="${c}">`).join('')}</datalist>
+    </div>` : '';
+
   const proximosHtml = proximos.length ? proximos.map(p => {
     const inf = informeDePartido(p.id);
     const sug = !inf ? sugerirRiesgo(p.local, p.visitante, { visitantePermitida:p.visitantePermitida, internacional:p.internacional, hora:p.hora, fecha:p.fecha }) : null;
@@ -1588,9 +2074,14 @@ function renderTabInicio() {
       <div class="sb riesgo-medio"><div class="sn">${porRiesgo('MEDIO')}</div><div class="sl">Conflictividad MEDIA</div></div>
       <div class="sb riesgo-bajo"><div class="sn">${porRiesgo('BAJO')}</div><div class="sl">Conflictividad BAJA</div></div>
     </div>
+    ${antPendHtml}
     ${internas.length ? `<div class="fc" style="border-left:4px solid #dc2626">
       <div class="sec-label" style="margin-bottom:6px">🔺 Alertas activas — internas en facciones radicalizadas</div>
       ${internas.map(([c,e]) => `<div class="factor pos" style="cursor:pointer" onclick="setTab('e');abrirEquipo('${c.replace(/'/g,"\\'")}')">🔺 <b>${c}</b>${e.internaDetalle?': '+esc(e.internaDetalle):''}</div>`).join('')}
+    </div>` : ''}
+    ${semaforoHtml ? `<div class="fc">
+      <div class="sec-label" style="margin-bottom:4px">🚦 Semáforo del fixture <span style="font-weight:400;font-size:11px;color:#6b7280">— relleno: informe finalizado · contorno: sugerencia del motor · click para abrir el análisis</span></div>
+      ${semaforoHtml}
     </div>` : ''}
     <div class="sec-label" style="margin:14px 0 8px">📅 Próximos 7 días</div>
     ${proximosHtml}
@@ -1620,7 +2111,8 @@ const GRAVEDADES = {
 function limpiarNombreClub(s) {
   let t = (s || '').replace(/club\s+atl[ée]tico|club\s+deportivo\s+y\s+social|club\s+deportivo|club\s+atl\.?|f[úu]tbol\s+club|club/gi, ' ').trim();
   t = norm(t);
-  t = t.replace(/\b[A-ZÑ]\b/g, ' ').replace(/\s{2,}/g, ' ').trim();
+  t = t.replace(/\bGRAL\.?\s/g, 'GENERAL ').replace(/\bDEP\.?\s/g, 'DEPORTIVO ').replace(/\bDEF\.?\s/g, 'DEFENSORES ');
+  t = t.replace(/\b[A-ZÑ]\b/g, ' ').replace(/\s{2,}/g, ' ').trim().replace(/\.$/, '').trim();
   if (!t) return '';
   // Intento de match contra la base de clubes
   if (RIV[t]) return t;
