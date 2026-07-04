@@ -15,6 +15,20 @@ const BASE = `https://firestore.googleapis.com/v1/projects/${PROJECT}/databases/
 // Mismas keywords que la pestaña Noticias de la app
 const KEYWORDS = ['barra','hincha','radicaliz','faccion','facción','violencia','incidente','disturbio','detenido','ultra','aguante','banderazo','enfrentamiento','arresto','detencion','detención','pelea','agresion','agresión','herido','tiroteo','pirotecnia','avalancha','suspendido','clausura'];
 const KEYWORDS_GRAVES = ['herido','tiroteo','muert','apuñal','apunal','baleado','fallec','avalancha'];
+// La noticia además tiene que ser DE FÚTBOL: sin esto, "hallaron un arsenal de armas"
+// o una nota del diario "El Porvenir" matchean como si fueran los clubes.
+const CONTEXTO_FUTBOL = ['futbol','fútbol','partido','hincha','barra','club','torneo','cancha','estadio','afa','ascenso','primera','liga','clasico','clásico','plantel','jugador','tribuna','aprevide','descenso','copa','fecha','vestuario','parcialidad'];
+// Clubes cuyo nombre es una palabra común, un lugar o un medio: exigen doble contexto
+const CLUBES_AMBIGUOS = ['ARSENAL','EL PORVENIR','ATLANTA','INDEPENDIENTE','UNION','COLON','HURACAN','BELGRANO','TIGRE','PLATENSE','BROWN','MITRE','GUEMES','SARMIENTO','ESTUDIANTES','DEFENSA Y JUSTICIA','SAN MARTIN','QUILMES','BANFIELD','LANUS','MORON','MERLO','ALVARADO','LIBERTAD','JUVENTUD UNIDA','EXCURSIONISTAS','DOCK SUD','ARGENTINO','CENTRAL','RIVER','PROGRESO','PORVENIR','VICTORIA'];
+// Google News agrega " - Fuente" (y a veces " - Fuente - Sección") al final del título
+function tituloSinMedio(titulo) {
+  let t = titulo;
+  for (let i = 0; i < 2; i++) {
+    const r = t.replace(/\s[-–—]\s[^-–—]{1,40}$/, '');
+    if (r.length >= 20) t = r; else break;
+  }
+  return t;
+}
 
 const norm = s => (s || '').toUpperCase().normalize('NFD').replace(/[\u0300-\u036f]/g, '').replace(/\s+/g, ' ').trim();
 const hash = s => { let h = 5381; for (let i = 0; i < s.length; i++) h = ((h << 5) + h + s.charCodeAt(i)) >>> 0; return h.toString(36); };
@@ -82,17 +96,23 @@ export default async () => {
     // 3) Google News RSS por club, últimos 7 días (máx. 20 clubes por corrida)
     for (const club of [...clubes].slice(0, 20)) {
       try {
-        const q = `"${club}" (barra OR incidentes OR detenidos OR enfrentamiento OR violencia OR pirotecnia OR banderazo OR suspendido) when:7d`;
+        const q = `"${club}" (barra OR incidentes OR detenidos OR enfrentamiento OR violencia OR pirotecnia OR banderazo OR suspendido) (futbol OR hinchas OR club OR partido OR cancha OR estadio) when:7d`;
         const url = `https://news.google.com/rss/search?q=${encodeURIComponent(q)}&hl=es-419&gl=AR&ceid=AR:es`;
         const r = await fetch(url, { signal: AbortSignal.timeout(12000) });
         if (!r.ok) continue;
         const items = parseRss(await r.text(), 'Google News');
 
         for (const n of items.slice(0, 8)) {
-          const texto = norm(n.titulo + ' ' + n.desc);
+          // El club tiene que aparecer en el TÍTULO REAL (sin el " - Medio" que agrega Google)
+          const tituloReal = tituloSinMedio(n.titulo);
+          const texto = norm(tituloReal + ' ' + n.desc);
           if (!texto.includes(club) && !club.split(' ').some(w => w.length > 4 && texto.includes(w))) continue;
-          const textoLc = (n.titulo + ' ' + n.desc).toLowerCase();
+          const textoLc = (tituloReal + ' ' + n.desc).toLowerCase();
           if (!KEYWORDS.some(k => textoLc.includes(k))) continue;
+          // Contexto futbolero obligatorio; doble para clubes de nombre ambiguo
+          const contexto = CONTEXTO_FUTBOL.filter(c => textoLc.includes(c)).length;
+          const minimo = CLUBES_AMBIGUOS.some(a => club === a || club.includes(a)) ? 2 : 1;
+          if (contexto < minimo) continue;
           resumen.noticias++;
           if (existentes.has(n.link)) { resumen.duplicadas++; continue; }
 
