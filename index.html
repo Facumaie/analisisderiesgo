@@ -355,7 +355,7 @@ function loadScript(src) {
 }
 
 // Escudo institucional en login y header (embebido, no depende de internet)
-const APP_VERSION = 'v3.0';
+const APP_VERSION = 'v3.1';
 const SVG_ICO = (p, t = 15) => `<svg viewBox="0 0 24 24" width="${t}" height="${t}" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">${p}</svg>`;
 const ICO_USER  = SVG_ICO('<path d="M19 21v-2a4 4 0 0 0-4-4H9a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/>');
 const ICO_SALIR = SVG_ICO('<path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/><polyline points="16 17 21 12 16 7"/><line x1="21" y1="12" x2="9" y2="12"/>');
@@ -387,7 +387,7 @@ const app = initializeApp(firebaseConfig);
 //   secreta) · 'enterprise' si es Enterprise (UNA sola clave, gestionada en
 //   Google Cloud). Tiene que coincidir con el proveedor registrado en
 //   Firebase → App Check. Con la clave vacía, este bloque no hace nada.
-const APPCHECK_SITE_KEY = '6LeXNkQtAAAAAO97Upw7ybEoPYTWQpyz7J2ckVqD';
+const APPCHECK_SITE_KEY = '';
 const APPCHECK_TIPO = 'v3';
 if (APPCHECK_SITE_KEY) {
   try {
@@ -1183,13 +1183,13 @@ window.setAnCampo = (campo, val) => { anDraft[campo] = val; render(); };
 // ═══════════════════════════════════════════════════════════════════════════════
 // TABLA DE POSICIONES (Promiedos) — contexto deportivo para el análisis
 // ═══════════════════════════════════════════════════════════════════════════════
-// IDs de liga en promiedos.com.ar (de la URL /league/{nombre}/{id})
+// IDs de liga en la API de ESPN (fuente verificada)
 const TABLA_LIGAS = [
-  { id:'hc',   claves:['LIGA PROFESIONAL','PRIMERA DIVISION','LIGA DE PRIMERA','LPF'], label:'Liga Profesional' },
-  { id:'ebj',  claves:['NACIONAL','PRIMERA NACIONAL','B NACIONAL'], label:'Primera Nacional' },
-  { id:'fahh', claves:['B METRO','PRIMERA B'], label:'Primera B Metropolitana' },
-  { id:'ffjb', claves:['PRIMERA C'], label:'Primera C' },
-  { id:'fahi', claves:['FEDERAL'], label:'Federal A' },
+  { id:'arg.1', claves:['LIGA PROFESIONAL','PRIMERA DIVISION','LIGA DE PRIMERA','LPF'], label:'Liga Profesional' },
+  { id:'arg.2', claves:['NACIONAL','PRIMERA NACIONAL','B NACIONAL'], label:'Primera Nacional' },
+  { id:'arg.3', claves:['B METRO','PRIMERA B'], label:'Primera B Metropolitana' },
+  { id:'arg.4', claves:['PRIMERA C'], label:'Primera C' },
+  { id:'arg.5', claves:['PRIMERA D'], label:'Primera D' },
 ];
 function ligaDeTorneo(torneo) {
   const t = norm(torneo || '');
@@ -1206,6 +1206,13 @@ function matchClubPromiedos(nombrePromiedos) {
   const r = resolverClub(n);
   return (r.estado === 'ok' || r.estado === 'alias') ? r.club : null;
 }
+// Zona según la nota oficial de ESPN (Relegation, Promotion, Copa...) si existe
+function zonaDeNota(nota) {
+  if (!nota) return null;
+  if (/releg|descen/i.test(nota)) return 'descenso';
+  if (/promot|ascen|champion|libertadores|sudamericana|final|reducido|playoff|copa/i.test(nota)) return 'definicion';
+  return null;
+}
 function zonaDePuesto(pos, total) {
   if (pos >= total - Math.max(2, Math.round(total * 0.15)) + 1) return 'descenso';
   if (pos <= Math.max(2, Math.round(total * 0.12))) return 'definicion';
@@ -1215,7 +1222,7 @@ let tablaCargando = false;
 window.consultarTabla = async (partidoId) => {
   const p = fixture.find(x => x.id === partidoId); if (!p) return;
   const liga = ligaDeTorneo(p.torneo);
-  if (!liga) { alert('No pude asociar el torneo "' + (p.torneo || '(vacío)') + '" a una liga de Promiedos.\nCompletá el campo Torneo del partido (ej: "Primera Nacional", "Primera C") y volvé a intentar.'); return; }
+  if (!liga) { alert('No pude asociar el torneo "' + (p.torneo || '(vacío)') + '" a una liga conocida.\nCompletá el campo Torneo del partido (ej: "Primera Nacional", "Primera C") y volvé a intentar.'); return; }
   tablaCargando = true; render();
   try {
     const r = await fetch(`/.netlify/functions/posiciones?liga=${liga.id}`, { signal: AbortSignal.timeout(15000) });
@@ -1226,7 +1233,7 @@ window.consultarTabla = async (partidoId) => {
       const c = norm(club);
       const fila = data.filas.find(f => matchClubPromiedos(f.equipo) === c);
       if (!fila) return null;
-      return { pos: fila.pos, pts: fila.pts, pj: fila.pj, total, zona: zonaDePuesto(fila.pos, total), nombrePromiedos: fila.equipo };
+      return { pos: fila.pos, pts: fila.pts, pj: fila.pj, total, zona: zonaDeNota(fila.nota) || zonaDePuesto(fila.pos, total), nombrePromiedos: fila.equipo };
     };
     const tabla = { local: buscar(p.local), visitante: buscar(p.visitante), liga: liga.label, consultado: fechaHoyLocal() };
     if (!tabla.local && !tabla.visitante) { alert(`Obtuve la tabla de ${liga.label} (${total} equipos) pero no encontré a ${p.local} ni a ${p.visitante} en ella. ¿El torneo del partido es el correcto?`); tablaCargando = false; render(); return; }
@@ -1828,7 +1835,7 @@ function renderTabInformes() {
       <div class="fc">
         <div style="display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:8px;margin-bottom:8px">
           <div class="sec-label" style="margin:0">⚽ Contexto deportivo y antecedente inmediato</div>
-          <button class="btn-mini" ${tablaCargando?'disabled':''} onclick="consultarTabla('${p.id}')">${tablaCargando ? '⏳ Consultando...' : d.tabla ? '🔄 Actualizar tabla' : '📊 Consultar tabla (Promiedos)'}</button>
+          <button class="btn-mini" ${tablaCargando?'disabled':''} onclick="consultarTabla('${p.id}')">${tablaCargando ? '⏳ Consultando...' : d.tabla ? '🔄 Actualizar tabla' : '📊 Consultar tabla de posiciones'}</button>
         </div>
         ${d.tabla ? `<div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:8px">
           ${[['local', p.local], ['visitante', p.visitante]].map(([lado, club]) => {
@@ -1838,7 +1845,7 @@ function renderTabInformes() {
             return `<div style="font-size:12px;background:${z[0]};border-radius:8px;padding:8px"><b>${club}</b> <span style="color:#6b7280">(${esc(t.nombrePromiedos)})</span><div style="color:${z[1]};margin-top:3px;font-weight:700">${t.pos}° de ${t.total} · ${t.pts} pts${t.pj?' · '+t.pj+' PJ':''}</div><div style="color:${z[1]};font-size:11px">${z[2]}</div></div>`;
           }).join('')}
         </div>
-        <div style="font-size:10.5px;color:#9ca3af;margin-bottom:8px">Tabla de ${esc(d.tabla.liga)} · fuente: promiedos.com.ar · consultado ${fmt(d.tabla.consultado)} · impacta en el riesgo sugerido</div>` : `<div style="font-size:11.5px;color:#6b7280;margin-bottom:8px">Consultá la tabla para que el motor pondere lo que hay en juego (permanencia, definición) y quede asentado en el informe.</div>`}
+        <div style="font-size:10.5px;color:#9ca3af;margin-bottom:8px">Tabla de ${esc(d.tabla.liga)} · fuente: ESPN · consultado ${fmt(d.tabla.consultado)} · impacta en el riesgo sugerido</div>` : `<div style="font-size:11.5px;color:#6b7280;margin-bottom:8px">Consultá la tabla para que el motor pondere lo que hay en juego (permanencia, definición) y quede asentado en el informe.</div>`}
         ${[p.local, p.visitante].map(club => {
           const up = ultimoPartidoLocal(club, p.fecha);
           if (!up) return `<div style="font-size:12px;padding:6px 0;border-top:1px solid #f3f4f6;color:#9ca3af">🏠 ${club}: sin partes U.C.O. de local en los últimos 180 días. <button class="btn-mini" style="font-size:10.5px;padding:2px 8px" onclick="buscarNoticiasUltimoLocal('${club.replace(/'/g,"\\\\'")}')">📰 Buscar en noticias</button></div>`;
