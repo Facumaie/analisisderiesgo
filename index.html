@@ -8,6 +8,7 @@
 <link rel="apple-touch-icon" href="/apple-touch-icon.png">
 <link rel="manifest" href="/manifest.webmanifest">
 <meta name="theme-color" content="#0C447C">
+<meta name="mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
 <link rel="preconnect" href="https://fonts.googleapis.com">
@@ -354,6 +355,7 @@ function loadScript(src) {
 }
 
 // Escudo institucional en login y header (embebido, no depende de internet)
+const APP_VERSION = 'v2.9';
 const SVG_ICO = (p, t = 15) => `<svg viewBox="0 0 24 24" width="${t}" height="${t}" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">${p}</svg>`;
 const ICO_USER  = SVG_ICO('<path d="M19 21v-2a4 4 0 0 0-4-4H9a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/>');
 const ICO_SALIR = SVG_ICO('<path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/><polyline points="16 17 21 12 16 7"/><line x1="21" y1="12" x2="9" y2="12"/>');
@@ -377,6 +379,17 @@ const _esc2 = document.getElementById('header-escudo'); if (_esc2) { _esc2.src =
 document.querySelectorAll('.sb-sub, .header-sub').forEach(e => { if (!e.textContent.includes(APP_VERSION)) e.textContent = e.textContent + ' · ' + APP_VERSION; });
 
 const app = initializeApp(firebaseConfig);
+
+// ── SEGURIDAD · Firebase App Check ──
+// Cuando actives App Check en la consola de Firebase (con reCAPTCHA v3), pegá acá
+// la "site key" del sitio. Con la clave vacía, este bloque no hace nada.
+const APPCHECK_SITE_KEY = '6LeXNkQtAAAAAO97Upw7ybEoPYTWQpyz7J2ckVqD';
+if (APPCHECK_SITE_KEY) {
+  try {
+    const { initializeAppCheck, ReCaptchaV3Provider } = await import('https://www.gstatic.com/firebasejs/11.0.0/firebase-app-check.js');
+    initializeAppCheck(app, { provider: new ReCaptchaV3Provider(APPCHECK_SITE_KEY), isTokenAutoRefreshEnabled: true });
+  } catch (e) { console.warn('App Check no inicializado:', e.message); }
+}
 const db  = getFirestore(app);
 
 // ═══════════════════════════════════════════════════════════════════════════════
@@ -700,7 +713,6 @@ function actualizarTituloTab() {
   if (el) el.textContent = TITULOS_TAB[st.tab] || '';
 }
 
-const APP_VERSION = 'v2.8';
 // Fecha de HOY en hora LOCAL (toISOString usa UTC: de 21 a 24 hs Argentina daría mañana)
 function fechaHoyLocal() { const d = new Date(); return `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`; }
 const fmt = ts => { try { if (!ts) return '—'; const v = (typeof ts === 'string' && /^\d{4}-\d{2}-\d{2}$/.test(ts)) ? ts + 'T12:00:00' : ts; const d = v?.toDate ? v.toDate() : new Date(v); if (isNaN(d.getTime())) return '—'; return d.toLocaleDateString('es-AR',{day:'2-digit',month:'2-digit',year:'numeric'}); } catch(e){ return '—'; } };
