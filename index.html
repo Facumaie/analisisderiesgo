@@ -1559,22 +1559,43 @@ window.guardarHistoricos = async () => {
   const invalidas = sel.filter(f => !f.local || !f.visitante || !f.riesgo);
   if (invalidas.length) { alert(`Hay ${invalidas.length} fila(s) sin equipo o sin conflictividad. Completalas o desmarcalas.`); return; }
   // evitar duplicados exactos ya cargados
+  const btn = document.getElementById('btn-cargar-hist');
   let guardadas = 0, dupes = 0;
-  for (const f of sel) {
-    const ya = informes.some(i => i.historico && norm(i.local) === norm(f.local) && norm(i.visitante) === norm(f.visitante) && i.fechaPartido === f.fechaPartido);
-    if (ya) { dupes++; continue; }
-    await addDoc(collection(db,'air_informes'), {
-      estado:'finalizado', historico:true,
-      local: norm(f.local), visitante: norm(f.visitante),
-      fechaPartido: f.fechaPartido || '', hora: f.hora || '',
-      riesgo: f.riesgo, analisis: f.analisis || '', iniciales: f.iniciales || '',
-      nroAR: f.nroAR || '', archivo: f.archivo || '',
-      creado: serverTimestamp(),
-    });
-    guardadas++;
+  try {
+    for (const f of sel) {
+      const ya = informes.some(i => i.historico && norm(i.local) === norm(f.local) && norm(i.visitante) === norm(f.visitante) && i.fechaPartido === f.fechaPartido);
+      if (ya) { dupes++; f.incluir = false; continue; }
+      await addDoc(collection(db,'air_informes'), {
+        estado:'finalizado', historico:true,
+        local: norm(f.local), visitante: norm(f.visitante),
+        fechaPartido: f.fechaPartido || '', hora: f.hora || '',
+        riesgo: f.riesgo, analisis: f.analisis || '', iniciales: f.iniciales || '',
+        nroAR: f.nroAR || '', archivo: f.archivo || '',
+        creado: serverTimestamp(),
+      });
+      f.incluir = false; // ya guardada: si algo falla, el reintento la saltea
+      guardadas++;
+      if (btn) btn.textContent = `💾 Guardando ${guardadas + dupes}/${sel.length}…`;
+    }
+  } catch (e) {
+    const f = sel[guardadas + dupes];
+    alert(`⚠ Se guardaron ${guardadas} informe(s) y la carga se cortó en "${f ? f.local + ' vs ' + f.visitante : '?'}": ${e.message}\n\nEl borrador sigue en pantalla y las filas ya guardadas quedaron desmarcadas. Corregí esa fila (o desmarcala) y volvé a tocar "Cargar al historial".`);
+    render(); return;
   }
   histDraft = null; render();
   alert(`✅ ${guardadas} informe(s) histórico(s) cargados al historial.${dupes ? ` Se omitieron ${dupes} duplicados.` : ''} El motor de riesgo ya los pondera como antecedentes.`);
+};
+// Restaura un borrador exportado como JSON (backup de histDraft) para no
+// re-editar a mano si la carga falló o la página se recargó.
+window.importarBorradorJSON = async (input) => {
+  const file = input.files[0]; input.value = '';
+  if (!file) return;
+  try {
+    const data = JSON.parse(await file.text());
+    if (!data || !Array.isArray(data.filas) || !data.filas.length) throw new Error('el archivo no tiene el formato del borrador (falta "filas")');
+    histDraft = { filas: data.filas, archivos: data.archivos || [file.name] };
+    render();
+  } catch (e) { alert('No se pudo leer el borrador: ' + e.message); }
 };
 window.eliminarHistorico = async id => {
   await borrarConPapelera('air_informes', id, 'Informe histórico');
@@ -1807,6 +1828,205 @@ window.generarConsolidadoPDF = async () => {
   pdf.save(`Analisis_de_Riesgo_Nro_${nro}.pdf`);
 };
 
+// ── PDF institucional: historial de informes por club (formato DIP con escudos) ──
+// Los helpers son espejo de los de generarConsolidadoPDF: si cambiás el formato
+// institucional allá, replicá el cambio acá.
+window.exportarHistorialEquipoPDF = async (club) => {
+  const c = norm(club);
+  const hist = historialEquipo(c).filter(i => i.estado === 'finalizado')
+    .sort((a, b) => (a.fechaPartido || '').localeCompare(b.fechaPartido || ''));
+  if (!hist.length) { alert('Este club no tiene informes finalizados en el historial.'); return; }
+
+  await loadScript('https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js');
+  const { jsPDF } = window.jspdf;
+  const pdf = new jsPDF({ unit:'pt', format:'a4' });
+  const PW = 595.28, ML = 56, MR = 56, MW = PW - ML - MR;
+  let y = 0;
+  const NIVEL_TXT = { ALTO:'ALTA', MEDIO:'MEDIA', BAJO:'BAJA' };
+
+  function encabezado() {
+    const hx = ML, hy = 34, hw = MW, hh = 74, cl = 96;
+    pdf.setDrawColor(0); pdf.setLineWidth(1.2);
+    pdf.rect(hx, hy, hw, hh);
+    pdf.rect(hx+3, hy+3, hw-6, hh-6);
+    pdf.line(hx+cl, hy+3, hx+cl, hy+hh-3);
+    pdf.line(hx+hw-cl, hy+3, hx+hw-cl, hy+hh-3);
+    try { pdf.addImage(LOGO_POL, 'PNG', hx+21.2, hy+8, 53.6, 58); } catch(e){}
+    try { pdf.addImage(LOGO_DPEM, 'PNG', hx+hw-cl+21.5, hy+8, 53.0, 58); } catch(e){}
+    const cx = hx + hw/2;
+    pdf.setLineWidth(0.8);
+    pdf.line(hx+cl, hy+3+23, hx+hw-cl, hy+3+23);
+    pdf.line(hx+cl, hy+3+46, hx+hw-cl, hy+3+46);
+    pdf.setFont('helvetica','bold'); pdf.setFontSize(12); pdf.setTextColor(0);
+    pdf.text('Formulario', cx, hy+18, { align:'center' });
+    pdf.text('Historial de Análisis de Riesgo', cx, hy+41, { align:'center' });
+    pdf.setFont('helvetica','normal');
+    pdf.text('División Informes Preventivos', cx, hy+64, { align:'center' });
+    y = hy + hh + 22;
+  }
+  function pie() {
+    const total = pdf.getNumberOfPages();
+    for (let p = 1; p <= total; p++) {
+      pdf.setPage(p);
+      pdf.setFont('helvetica','normal'); pdf.setFontSize(9); pdf.setTextColor(60);
+      pdf.text(`Página ${p} de ${total}`, PW-MR, 795, { align:'right' });
+      pdf.setFont('helvetica','bolditalic'); pdf.setFontSize(6.3); pdf.setTextColor(70);
+      const disc = 'El presente Documento es de uso interno de la División Informes Preventivos – Departamento Seguridad en Eventos Deportivos - Dirección Prevención en Eventos Masivos – Superintendencia de Operaciones - Policía de la Ciudad - Ministerio de Seguridad. Cualquier copia impresa se considera copia NO CONTROLADA.';
+      pdf.text(pdf.splitTextToSize(disc, MW), ML, 806);
+      pdf.setTextColor(0);
+    }
+  }
+  function saltoSi(alto) { if (y + alto > 770) { pdf.addPage(); encabezado(); } }
+  function parrafo(texto, opts = {}) {
+    const size = opts.size || 11, lh = size * 1.55;
+    pdf.setFont('helvetica', opts.estilo || 'normal'); pdf.setFontSize(size);
+    const sangria = opts.sangria ? 28 : 0;
+    const lineas = pdf.splitTextToSize(texto, MW - sangria);
+    lineas.forEach((ln, i) => {
+      saltoSi(lh);
+      pdf.text(ln, opts.centrado ? PW/2 : ML + (i === 0 ? sangria : 0), y, opts.centrado ? { align:'center' } : undefined);
+      y += lh;
+    });
+    y += opts.despues ?? 6;
+  }
+  function tokenizarMarcas(texto) {
+    const toks = []; let b = false, u = false, buf = '';
+    const push = () => { if (buf.trim()) buf.split(/\s+/).filter(Boolean).forEach(w => toks.push({ w, b, u })); buf = ''; };
+    for (let i = 0; i < texto.length;) {
+      if (texto.startsWith('**', i)) { push(); b = !b; i += 2; }
+      else if (texto.startsWith('__', i)) { push(); u = !u; i += 2; }
+      else { buf += texto[i]; i++; }
+    }
+    push();
+    return toks;
+  }
+  function parrafoRico(texto, opts = {}) {
+    const size = opts.size || 11, lh = size * 1.55;
+    pdf.setFontSize(size);
+    const fuente = t => opts.estilo === 'italic' ? (t.b ? 'bolditalic' : 'italic') : (t.b ? 'bold' : 'normal');
+    const toks = tokenizarMarcas(texto);
+    if (!toks.length) { y += opts.despues ?? 6; return; }
+    const sangria = opts.sangria ? 28 : 0;
+    pdf.setFont('helvetica', 'normal');
+    const esp = pdf.getTextWidth(' ');
+    const lineas = []; let lin = [], ancho = 0, maxW = MW - sangria;
+    toks.forEach(t => {
+      pdf.setFont('helvetica', fuente(t));
+      const w = pdf.getTextWidth(t.w);
+      if (lin.length && ancho + esp + w > maxW) { lineas.push({ toks: lin, ancho, maxW }); lin = []; ancho = 0; maxW = MW; }
+      ancho += (lin.length ? esp : 0) + w; lin.push({ ...t, ww: w });
+    });
+    if (lin.length) lineas.push({ toks: lin, ancho, maxW, ultima: true });
+    lineas.forEach((L, li) => {
+      saltoSi(lh);
+      const gaps = L.toks.length - 1;
+      const justificar = opts.justificado !== false && !L.ultima && gaps > 0;
+      const espL = justificar ? esp + (L.maxW - L.ancho) / gaps : esp;
+      let x = ML + (li === 0 ? sangria : 0);
+      L.toks.forEach(t => {
+        pdf.setFont('helvetica', fuente(t));
+        pdf.text(t.w, x, y);
+        if (t.u) { pdf.setLineWidth(0.7); pdf.setDrawColor(0); pdf.line(x, y + 1.6, x + t.ww, y + 1.6); }
+        x += t.ww + espL;
+      });
+      y += lh;
+    });
+    y += opts.despues ?? 6;
+  }
+  function recuadroConflictividad(texto, nivel) {
+    const size = 11.5, lh = size * 1.5, pad = 12;
+    const cfg = {
+      ALTO:  { borde:[220,38,38],  fondo:[254,226,226] },
+      MEDIO: { borde:[202,138,4],  fondo:[254,249,195] },
+      BAJO:  { borde:[22,163,74],  fondo:[220,252,231] },
+    }[nivel] || { borde:[107,114,128], fondo:[243,244,246] };
+    pdf.setFontSize(size);
+    const toks = sinMarcas(texto).split(/\s+/).filter(Boolean)
+      .map(w => ({ w, b: /^CONFLICTIVIDAD:?$/i.test(w) || /^(ALTA|MEDIA|BAJA)[\.,;:]?$/i.test(w) }));
+    const maxW = MW - pad * 2;
+    pdf.setFont('helvetica', 'normal');
+    const esp = pdf.getTextWidth(' ');
+    const lineas = []; let lin = [], ancho = 0;
+    toks.forEach(t => {
+      pdf.setFont('helvetica', t.b ? 'bold' : 'normal');
+      const w = pdf.getTextWidth(t.w);
+      if (lin.length && ancho + esp + w > maxW) { lineas.push({ toks: lin, ancho }); lin = []; ancho = 0; }
+      ancho += (lin.length ? esp : 0) + w; lin.push({ ...t, ww: w });
+    });
+    if (lin.length) lineas.push({ toks: lin, ancho, ultima: true });
+    const altoBox = pad * 2 + (lineas.length - 1) * lh + size;
+    saltoSi(altoBox + 14);
+    const top = y - size + 3;
+    pdf.setDrawColor(cfg.borde[0], cfg.borde[1], cfg.borde[2]);
+    pdf.setFillColor(cfg.fondo[0], cfg.fondo[1], cfg.fondo[2]);
+    pdf.setLineWidth(1.6);
+    pdf.roundedRect(ML, top, MW, altoBox, 6, 6, 'FD');
+    let by = top + pad + size * 0.78;
+    lineas.forEach(L => {
+      const gaps = L.toks.length - 1;
+      const espL = (!L.ultima && gaps > 0) ? esp + (maxW - L.ancho) / gaps : esp;
+      let x = ML + pad;
+      L.toks.forEach(t => { pdf.setFont('helvetica', t.b ? 'bold' : 'normal'); pdf.setTextColor(0); pdf.text(t.w, x, by); x += t.ww + espL; });
+      by += lh;
+    });
+    pdf.setDrawColor(0); pdf.setLineWidth(0.8);
+    y = top + altoBox + 18;
+  }
+
+  encabezado();
+  const hoy = new Date();
+  pdf.setFont('helvetica','bold'); pdf.setFontSize(11);
+  pdf.text(`C.A.B.A., ${hoy.getDate()} de ${MESES[hoy.getMonth()]} del ${hoy.getFullYear()}`, PW-MR, y, { align:'right' }); y += 26;
+
+  const titulo = `Club ${c}`;
+  pdf.setFont('helvetica','bold'); pdf.setFontSize(15);
+  pdf.text(titulo, PW/2, y, { align:'center' });
+  const twT = pdf.getTextWidth(titulo);
+  pdf.setLineWidth(0.9); pdf.line(PW/2 - twT/2, y + 2.5, PW/2 + twT/2, y + 2.5);
+  y += 20;
+  pdf.setFont('helvetica','normal'); pdf.setFontSize(11.5);
+  pdf.text('Historial de informes de análisis de riesgo', PW/2, y, { align:'center' });
+  y += 28;
+
+  const nAlto = hist.filter(i => i.riesgo === 'ALTO').length;
+  const nMedio = hist.filter(i => i.riesgo === 'MEDIO').length;
+  const nBajo = hist.filter(i => i.riesgo === 'BAJO').length;
+  const fechas = hist.map(i => i.fechaPartido).filter(Boolean).sort();
+  const rango = fechas.length ? ` correspondientes al período comprendido entre el ${fmt(fechas[0])} y el ${fmt(fechas[fechas.length-1])},` : '';
+  parrafoRico(`El presente documento compila los **${hist.length}** informes de análisis de riesgo registrados en el sistema para el club de referencia,${rango} con la siguiente graduación de conflictividad: **${nAlto}** ALTA, **${nMedio}** MEDIA y **${nBajo}** BAJA. Los análisis se transcriben a continuación en orden cronológico, conforme fueran elaborados oportunamente por la División Informes Preventivos.`, { sangria:true, despues:18 });
+
+  hist.forEach(inf => {
+    saltoSi(120);
+    y += 8;
+    const tt = `${inf.local} vs ${inf.visitante}`;
+    pdf.setFont('helvetica','bold'); pdf.setFontSize(13);
+    pdf.text(tt, PW/2, y, { align:'center' });
+    const tw = pdf.getTextWidth(tt);
+    pdf.setLineWidth(0.9); pdf.line(PW/2 - tw/2, y + 2.5, PW/2 + tw/2, y + 2.5);
+    y += 16;
+    const metas = [`Fecha: ${fmt(inf.fechaPartido)}`];
+    if (inf.hora) metas.push(`Hora: ${inf.hora}`);
+    metas.push(`Conflictividad: ${NIVEL_TXT[inf.riesgo] || inf.riesgo || '—'}`);
+    if (inf.nroAR) metas.push(`AR Nro. ${inf.nroAR}`);
+    if (inf.iniciales) metas.push(inf.iniciales.toUpperCase());
+    pdf.setFont('helvetica','normal'); pdf.setFontSize(10);
+    pdf.text(metas.join('  ·  '), PW/2, y, { align:'center' });
+    y += 20;
+    const parrafos = (inf.analisis || '').split(/\n\s*\n/).map(s => s.replace(/\n/g,' ').trim()).filter(Boolean);
+    if (!parrafos.length) parrafo('Sin texto de análisis registrado para este encuentro.', { estilo:'italic', size:10 });
+    parrafos.forEach((px, i) => {
+      if (/CONFLICTIVIDAD\s*:?\s*(ALTA|MEDIA|BAJA)/i.test(sinMarcas(px))) {
+        const nv = inf.riesgo || { ALTA:'ALTO', MEDIA:'MEDIO', BAJA:'BAJO' }[(sinMarcas(px).match(/CONFLICTIVIDAD\s*:?\s*(ALTA|MEDIA|BAJA)/i)||[])[1]?.toUpperCase()] || '';
+        recuadroConflictividad(px, nv);
+      } else parrafoRico(px, { sangria:true, estilo: i === 0 ? 'italic' : 'normal' });
+    });
+    y += 6;
+  });
+
+  pie();
+  pdf.save(`Historial_AR_${c.replace(/[^A-Za-z0-9]+/g, '_')}.pdf`);
+};
+
 function renderTabInformes() {
   // ── Vista de análisis de un partido ──────────────────────────────────────────
   if (st.partidoAbierto) {
@@ -2020,6 +2240,7 @@ function renderTabInformes() {
         <button class="btn-mini" style="background:#0C447C;color:#fff;border-color:#0C447C" onclick="generarConsolidadoPDF()">📕 PDF institucional (${fins.length})</button>
         <button class="btn-mini" style="background:#059669;color:#fff;border-color:#047857" onclick="generarConsolidado()">📄 Copiar texto consolidado</button>
         <label class="btn-mini" style="cursor:pointer;background:#7c3aed;color:#fff;border-color:#6d28d9">📥 Importar históricos (PDF)<input type="file" accept=".pdf" multiple onchange="importarInformesHistoricos(this)" style="display:none"></label>
+        <label class="btn-mini" style="cursor:pointer">📂 Reimportar borrador (JSON)<input type="file" accept=".json,application/json" onchange="importarBorradorJSON(this)" style="display:none"></label>
         <button class="btn-mini" style="background:#0284c7;color:#fff;border-color:#0369a1" onclick="abrirPegarFixture()">📋 Pegar fixture</button>
         <button class="btn-mini" style="background:#0C447C;color:#fff;border-color:#0C447C" onclick="abrirFormPartido()">➕ Cargar partido</button>
       </div>
@@ -2043,7 +2264,7 @@ function histPreviewHtml() {
         <div style="font-size:11.5px;color:#6b7280;margin-top:2px">Revisá equipos, fecha y conflictividad. Corregí lo que haga falta y desmarcá lo que no quieras cargar.</div>
       </div>
       <div style="display:flex;gap:6px">
-        <button class="btn-main" style="flex:none;padding:8px 16px" onclick="guardarHistoricos()">💾 Cargar al historial</button>
+        <button class="btn-main" id="btn-cargar-hist" style="flex:none;padding:8px 16px" onclick="guardarHistoricos()">💾 Cargar al historial</button>
         <button class="btn-mini" style="padding:8px 12px" onclick="cancelarHist()">Cancelar</button>
       </div>
     </div>
@@ -2162,7 +2383,10 @@ function renderTabEquipos() {
     return `
       <button class="btn-mini" onclick="cerrarEquipo()" style="margin-bottom:12px">← Volver a equipos</button>
       <div class="fc">
-        <div style="font-size:17px;font-weight:700;margin-bottom:4px">🏟️ ${c}</div>
+        <div style="display:flex;justify-content:space-between;align-items:center;gap:8px;flex-wrap:wrap;margin-bottom:4px">
+          <div style="font-size:17px;font-weight:700">🏟️ ${c}</div>
+          ${hist.some(i => i.estado === 'finalizado') ? `<button class="btn-mini" style="background:#0C447C;color:#fff;border-color:#0C447C" onclick="exportarHistorialEquipoPDF('${c.replace(/'/g,"\\'")}')">📄 Exportar historial (PDF)</button>` : ''}
+        </div>
         ${riv ? `<div style="font-size:12px;color:#6b7280;line-height:1.7">
           ${riv.max.length ? `<b style="color:#dc2626">Rivalidad máxima:</b> ${riv.max.join(' · ')}<br>` : ''}
           ${riv.enem.length ? `<b style="color:#ea580c">Enemistad:</b> ${riv.enem.join(' · ')}<br>` : ''}
