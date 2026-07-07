@@ -1828,9 +1828,9 @@ window.generarConsolidadoPDF = async () => {
   pdf.save(`Analisis_de_Riesgo_Nro_${nro}.pdf`);
 };
 
-// ── PDF institucional: historial de informes por club (formato DIP con escudos) ──
-// Los helpers son espejo de los de generarConsolidadoPDF: si cambiás el formato
-// institucional allá, replicá el cambio acá.
+// ── PDF institucional: informe ESTADÍSTICO del historial por club (formato DIP) ──
+// Dossier corto para carpeta: KPIs, distribución, evolución temporal, rivales y
+// tabla de últimos encuentros. El encabezado/pie son espejo del consolidado.
 window.exportarHistorialEquipoPDF = async (club) => {
   const c = norm(club);
   const hist = historialEquipo(c).filter(i => i.estado === 'finalizado')
@@ -1842,7 +1842,19 @@ window.exportarHistorialEquipoPDF = async (club) => {
   const pdf = new jsPDF({ unit:'pt', format:'a4' });
   const PW = 595.28, ML = 56, MR = 56, MW = PW - ML - MR;
   let y = 0;
-  const NIVEL_TXT = { ALTO:'ALTA', MEDIO:'MEDIA', BAJO:'BAJA' };
+
+  const NIVEL = { ALTO:'ALTA', MEDIO:'MEDIA', BAJO:'BAJA' };
+  const COL   = { ALTO:[220,38,38], MEDIO:[234,179,8], BAJO:[22,163,74] };
+  const FONDO = { ALTO:[254,226,226], MEDIO:[254,249,195], BAJO:[220,252,231] };
+  const AZUL  = [12,68,124];
+
+  // Datos base
+  const cnt = { ALTO:0, MEDIO:0, BAJO:0 };
+  hist.forEach(i => { if (cnt[i.riesgo] !== undefined) cnt[i.riesgo]++; });
+  const tot = hist.length;
+  const pct = k => tot ? Math.round(cnt[k] * 100 / tot) : 0;
+  const nLoc = hist.filter(i => norm(i.local) === c).length;
+  const fechas = hist.map(i => i.fechaPartido).filter(Boolean).sort();
 
   function encabezado() {
     const hx = ML, hy = 34, hw = MW, hh = 74, cl = 96;
@@ -1859,7 +1871,7 @@ window.exportarHistorialEquipoPDF = async (club) => {
     pdf.line(hx+cl, hy+3+46, hx+hw-cl, hy+3+46);
     pdf.setFont('helvetica','bold'); pdf.setFontSize(12); pdf.setTextColor(0);
     pdf.text('Formulario', cx, hy+18, { align:'center' });
-    pdf.text('Historial de Análisis de Riesgo', cx, hy+41, { align:'center' });
+    pdf.text('Informe Estadístico de Riesgo', cx, hy+41, { align:'center' });
     pdf.setFont('helvetica','normal');
     pdf.text('División Informes Preventivos', cx, hy+64, { align:'center' });
     y = hy + hh + 22;
@@ -1877,18 +1889,6 @@ window.exportarHistorialEquipoPDF = async (club) => {
     }
   }
   function saltoSi(alto) { if (y + alto > 770) { pdf.addPage(); encabezado(); } }
-  function parrafo(texto, opts = {}) {
-    const size = opts.size || 11, lh = size * 1.55;
-    pdf.setFont('helvetica', opts.estilo || 'normal'); pdf.setFontSize(size);
-    const sangria = opts.sangria ? 28 : 0;
-    const lineas = pdf.splitTextToSize(texto, MW - sangria);
-    lineas.forEach((ln, i) => {
-      saltoSi(lh);
-      pdf.text(ln, opts.centrado ? PW/2 : ML + (i === 0 ? sangria : 0), y, opts.centrado ? { align:'center' } : undefined);
-      y += lh;
-    });
-    y += opts.despues ?? 6;
-  }
   function tokenizarMarcas(texto) {
     const toks = []; let b = false, u = false, buf = '';
     const push = () => { if (buf.trim()) buf.split(/\s+/).filter(Boolean).forEach(w => toks.push({ w, b, u })); buf = ''; };
@@ -1903,7 +1903,7 @@ window.exportarHistorialEquipoPDF = async (club) => {
   function parrafoRico(texto, opts = {}) {
     const size = opts.size || 11, lh = size * 1.55;
     pdf.setFontSize(size);
-    const fuente = t => opts.estilo === 'italic' ? (t.b ? 'bolditalic' : 'italic') : (t.b ? 'bold' : 'normal');
+    const fuente = t => t.b ? 'bold' : 'normal';
     const toks = tokenizarMarcas(texto);
     if (!toks.length) { y += opts.despues ?? 6; return; }
     const sangria = opts.sangria ? 28 : 0;
@@ -1920,59 +1920,163 @@ window.exportarHistorialEquipoPDF = async (club) => {
     lineas.forEach((L, li) => {
       saltoSi(lh);
       const gaps = L.toks.length - 1;
-      const justificar = opts.justificado !== false && !L.ultima && gaps > 0;
-      const espL = justificar ? esp + (L.maxW - L.ancho) / gaps : esp;
+      const espL = (!L.ultima && gaps > 0) ? esp + (L.maxW - L.ancho) / gaps : esp;
       let x = ML + (li === 0 ? sangria : 0);
-      L.toks.forEach(t => {
-        pdf.setFont('helvetica', fuente(t));
-        pdf.text(t.w, x, y);
-        if (t.u) { pdf.setLineWidth(0.7); pdf.setDrawColor(0); pdf.line(x, y + 1.6, x + t.ww, y + 1.6); }
-        x += t.ww + espL;
-      });
+      L.toks.forEach(t => { pdf.setFont('helvetica', fuente(t)); pdf.text(t.w, x, y); x += t.ww + espL; });
       y += lh;
     });
     y += opts.despues ?? 6;
   }
-  function recuadroConflictividad(texto, nivel) {
-    const size = 11.5, lh = size * 1.5, pad = 12;
-    const cfg = {
-      ALTO:  { borde:[220,38,38],  fondo:[254,226,226] },
-      MEDIO: { borde:[202,138,4],  fondo:[254,249,195] },
-      BAJO:  { borde:[22,163,74],  fondo:[220,252,231] },
-    }[nivel] || { borde:[107,114,128], fondo:[243,244,246] };
-    pdf.setFontSize(size);
-    const toks = sinMarcas(texto).split(/\s+/).filter(Boolean)
-      .map(w => ({ w, b: /^CONFLICTIVIDAD:?$/i.test(w) || /^(ALTA|MEDIA|BAJA)[\.,;:]?$/i.test(w) }));
-    const maxW = MW - pad * 2;
-    pdf.setFont('helvetica', 'normal');
-    const esp = pdf.getTextWidth(' ');
-    const lineas = []; let lin = [], ancho = 0;
-    toks.forEach(t => {
-      pdf.setFont('helvetica', t.b ? 'bold' : 'normal');
-      const w = pdf.getTextWidth(t.w);
-      if (lin.length && ancho + esp + w > maxW) { lineas.push({ toks: lin, ancho }); lin = []; ancho = 0; }
-      ancho += (lin.length ? esp : 0) + w; lin.push({ ...t, ww: w });
-    });
-    if (lin.length) lineas.push({ toks: lin, ancho, ultima: true });
-    const altoBox = pad * 2 + (lineas.length - 1) * lh + size;
-    saltoSi(altoBox + 14);
-    const top = y - size + 3;
-    pdf.setDrawColor(cfg.borde[0], cfg.borde[1], cfg.borde[2]);
-    pdf.setFillColor(cfg.fondo[0], cfg.fondo[1], cfg.fondo[2]);
-    pdf.setLineWidth(1.6);
-    pdf.roundedRect(ML, top, MW, altoBox, 6, 6, 'FD');
-    let by = top + pad + size * 0.78;
-    lineas.forEach(L => {
-      const gaps = L.toks.length - 1;
-      const espL = (!L.ultima && gaps > 0) ? esp + (maxW - L.ancho) / gaps : esp;
-      let x = ML + pad;
-      L.toks.forEach(t => { pdf.setFont('helvetica', t.b ? 'bold' : 'normal'); pdf.setTextColor(0); pdf.text(t.w, x, by); x += t.ww + espL; });
-      by += lh;
-    });
-    pdf.setDrawColor(0); pdf.setLineWidth(0.8);
-    y = top + altoBox + 18;
+  function seccion(t) {
+    saltoSi(38);
+    y += 8;
+    pdf.setFont('helvetica','bold'); pdf.setFontSize(10.5); pdf.setTextColor(...AZUL);
+    pdf.text(t.toUpperCase(), ML, y);
+    pdf.setDrawColor(...AZUL); pdf.setLineWidth(0.8);
+    pdf.line(ML, y + 3.5, ML + MW, y + 3.5);
+    pdf.setDrawColor(0); pdf.setTextColor(0);
+    y += 20;
   }
 
+  // ── Tarjetas KPI ──
+  function kpis() {
+    const gap = 10, bw = (MW - gap*3)/4, bh = 52;
+    saltoSi(bh + 14);
+    const defs = [
+      { lbl:'INFORMES', val:String(tot), sub:'total registrados', borde:AZUL, fondo:[239,246,255] },
+      ...['ALTO','MEDIO','BAJO'].map(k => ({ lbl:'CONFLICT. ' + NIVEL[k], val:String(cnt[k]), sub:`${pct(k)}% del total`, borde:COL[k], fondo:FONDO[k] })),
+    ];
+    defs.forEach((d, i) => {
+      const x = ML + i*(bw+gap);
+      pdf.setDrawColor(...d.borde); pdf.setFillColor(...d.fondo); pdf.setLineWidth(1.2);
+      pdf.roundedRect(x, y, bw, bh, 5, 5, 'FD');
+      pdf.setTextColor(...d.borde); pdf.setFont('helvetica','bold');
+      pdf.setFontSize(7.5); pdf.text(d.lbl, x + bw/2, y + 12, { align:'center' });
+      pdf.setFontSize(19); pdf.text(d.val, x + bw/2, y + 33, { align:'center' });
+      pdf.setFont('helvetica','normal'); pdf.setFontSize(7.5); pdf.setTextColor(75,85,99);
+      pdf.text(d.sub, x + bw/2, y + 45, { align:'center' });
+    });
+    pdf.setTextColor(0); pdf.setDrawColor(0);
+    y += bh + 14;
+  }
+
+  // ── Barra apilada de distribución ──
+  function barraDistribucion() {
+    seccion('Distribución de conflictividad');
+    const bh = 18;
+    saltoSi(bh + 34);
+    let x = ML;
+    ['ALTO','MEDIO','BAJO'].forEach(k => {
+      const w = tot ? MW * cnt[k] / tot : 0;
+      if (w > 0) {
+        pdf.setFillColor(...COL[k]); pdf.rect(x, y, w, bh, 'F');
+        if (w > 36) {
+          pdf.setTextColor(255); pdf.setFont('helvetica','bold'); pdf.setFontSize(8.5);
+          pdf.text(`${pct(k)}%`, x + w/2, y + 12, { align:'center' });
+        }
+        x += w;
+      }
+    });
+    pdf.setDrawColor(0); pdf.setLineWidth(0.6); pdf.rect(ML, y, MW, bh);
+    y += bh + 14;
+    let lx = ML;
+    ['ALTO','MEDIO','BAJO'].forEach(k => {
+      pdf.setFillColor(...COL[k]); pdf.rect(lx, y - 7, 8, 8, 'F');
+      pdf.setTextColor(0); pdf.setFont('helvetica','normal'); pdf.setFontSize(9);
+      const t = `${NIVEL[k]}: ${cnt[k]} (${pct(k)}%)`;
+      pdf.text(t, lx + 12, y);
+      lx += 12 + pdf.getTextWidth(t) + 20;
+    });
+    y += 10;
+  }
+
+  // ── Evolución temporal (puntos por nivel a lo largo del período) ──
+  function evolucion() {
+    const datos = hist.filter(i => i.fechaPartido && COL[i.riesgo]);
+    if (datos.length < 2) return;
+    seccion('Evolución temporal de la conflictividad');
+    const ch = 78, x0 = ML + 46, cw = MW - 46;
+    saltoSi(ch + 34);
+    const top = y;
+    const t0 = new Date(datos[0].fechaPartido + 'T12:00:00').getTime();
+    const t1 = new Date(datos[datos.length-1].fechaPartido + 'T12:00:00').getTime();
+    const NY = { ALTO: top + 10, MEDIO: top + ch/2, BAJO: top + ch - 10 };
+    ['ALTO','MEDIO','BAJO'].forEach(k => {
+      pdf.setDrawColor(229,231,235); pdf.setLineWidth(0.6);
+      pdf.line(x0, NY[k], x0 + cw, NY[k]);
+      pdf.setTextColor(...COL[k]); pdf.setFont('helvetica','bold'); pdf.setFontSize(8);
+      pdf.text(NIVEL[k], x0 - 6, NY[k] + 2.5, { align:'right' });
+    });
+    const px = i => t1 > t0 ? x0 + cw * (new Date(datos[i].fechaPartido + 'T12:00:00').getTime() - t0) / (t1 - t0) : x0 + cw/2;
+    pdf.setDrawColor(156,163,175); pdf.setLineWidth(0.8);
+    for (let i = 1; i < datos.length; i++) pdf.line(px(i-1), NY[datos[i-1].riesgo], px(i), NY[datos[i].riesgo]);
+    datos.forEach((d, i) => { pdf.setFillColor(...COL[d.riesgo]); pdf.circle(px(i), NY[d.riesgo], 2.6, 'F'); });
+    pdf.setTextColor(60); pdf.setFont('helvetica','normal'); pdf.setFontSize(8);
+    pdf.text(fmt(datos[0].fechaPartido), x0, top + ch + 13);
+    pdf.text(fmt(datos[datos.length-1].fechaPartido), x0 + cw, top + ch + 13, { align:'right' });
+    pdf.setTextColor(0); pdf.setDrawColor(0);
+    y = top + ch + 26;
+  }
+
+  // ── Rivales más frecuentes ──
+  function rivales() {
+    const m = {};
+    hist.forEach(i => {
+      const r = norm(i.local) === c ? norm(i.visitante) : norm(i.local);
+      if (!r) return;
+      m[r] = m[r] || { n:0, peor:'BAJO' };
+      m[r].n++;
+      const ordn = { BAJO:0, MEDIO:1, ALTO:2 };
+      if ((ordn[i.riesgo] ?? 0) > ordn[m[r].peor]) m[r].peor = i.riesgo;
+    });
+    const top = Object.entries(m).sort((a,b) => b[1].n - a[1].n).slice(0, 6);
+    if (!top.length) return;
+    seccion('Rivales más frecuentes en el período');
+    const maxN = top[0][1].n, bx = ML + 172, bw = MW - 172 - 26, rh = 15;
+    saltoSi(top.length * rh + 24);
+    top.forEach(([r, d]) => {
+      pdf.setFont('helvetica','normal'); pdf.setFontSize(9); pdf.setTextColor(0);
+      pdf.text(r.length > 30 ? r.slice(0, 29) + '…' : r, ML, y);
+      const w = Math.max(6, bw * d.n / maxN);
+      pdf.setFillColor(...COL[d.peor]); pdf.roundedRect(bx, y - 8, w, 10, 2, 2, 'F');
+      pdf.setFont('helvetica','bold'); pdf.setFontSize(8.5);
+      pdf.text(String(d.n), bx + w + 5, y);
+      y += rh;
+    });
+    pdf.setFont('helvetica','italic'); pdf.setFontSize(7.5); pdf.setTextColor(107,114,128);
+    pdf.text('El color de la barra indica la máxima graduación de conflictividad registrada contra ese rival.', ML, y + 2);
+    pdf.setTextColor(0);
+    y += 14;
+  }
+
+  // ── Tabla de últimos encuentros ──
+  function tabla() {
+    const ult = [...hist].slice(-12).reverse();
+    seccion(`Últimos encuentros registrados${hist.length > 12 ? ` (12 de ${tot})` : ''}`);
+    const rh = 15;
+    saltoSi(rh * (ult.length + 1) + 10);
+    const cols = [ML, ML + 66, ML + 322, ML + 380];
+    pdf.setFillColor(...AZUL); pdf.rect(ML, y - 9, MW, 13, 'F');
+    pdf.setFont('helvetica','bold'); pdf.setFontSize(8.5); pdf.setTextColor(255);
+    pdf.text('FECHA', cols[0] + 4, y); pdf.text('ENCUENTRO', cols[1] + 4, y);
+    pdf.text('COND.', cols[2] + 4, y); pdf.text('CONFLICTIVIDAD', cols[3] + 4, y);
+    y += rh - 2;
+    ult.forEach((i2, k) => {
+      if (k % 2) { pdf.setFillColor(243,244,246); pdf.rect(ML, y - 9, MW, rh - 2, 'F'); }
+      pdf.setFont('helvetica','normal'); pdf.setFontSize(8.5); pdf.setTextColor(0);
+      pdf.text(fmt(i2.fechaPartido), cols[0] + 4, y);
+      const enc = `${i2.local} vs ${i2.visitante}`;
+      pdf.text(enc.length > 52 ? enc.slice(0, 51) + '…' : enc, cols[1] + 4, y);
+      pdf.text(norm(i2.local) === c ? 'LOCAL' : 'VISIT.', cols[2] + 4, y);
+      pdf.setFont('helvetica','bold'); pdf.setTextColor(...(COL[i2.riesgo] || [0,0,0]));
+      pdf.text(NIVEL[i2.riesgo] || i2.riesgo || '—', cols[3] + 4, y);
+      y += rh - 2;
+    });
+    pdf.setTextColor(0);
+    y += 6;
+  }
+
+  // ── Armado del documento ──
   encabezado();
   const hoy = new Date();
   pdf.setFont('helvetica','bold'); pdf.setFontSize(11);
@@ -1983,48 +2087,22 @@ window.exportarHistorialEquipoPDF = async (club) => {
   pdf.text(titulo, PW/2, y, { align:'center' });
   const twT = pdf.getTextWidth(titulo);
   pdf.setLineWidth(0.9); pdf.line(PW/2 - twT/2, y + 2.5, PW/2 + twT/2, y + 2.5);
-  y += 20;
-  pdf.setFont('helvetica','normal'); pdf.setFontSize(11.5);
-  pdf.text('Historial de informes de análisis de riesgo', PW/2, y, { align:'center' });
-  y += 28;
+  y += 19;
+  pdf.setFont('helvetica','normal'); pdf.setFontSize(11);
+  pdf.text('Resumen estadístico del historial de análisis de riesgo', PW/2, y, { align:'center' });
+  y += 24;
 
-  const nAlto = hist.filter(i => i.riesgo === 'ALTO').length;
-  const nMedio = hist.filter(i => i.riesgo === 'MEDIO').length;
-  const nBajo = hist.filter(i => i.riesgo === 'BAJO').length;
-  const fechas = hist.map(i => i.fechaPartido).filter(Boolean).sort();
-  const rango = fechas.length ? ` correspondientes al período comprendido entre el ${fmt(fechas[0])} y el ${fmt(fechas[fechas.length-1])},` : '';
-  parrafoRico(`El presente documento compila los **${hist.length}** informes de análisis de riesgo registrados en el sistema para el club de referencia,${rango} con la siguiente graduación de conflictividad: **${nAlto}** ALTA, **${nMedio}** MEDIA y **${nBajo}** BAJA. Los análisis se transcriben a continuación en orden cronológico, conforme fueran elaborados oportunamente por la División Informes Preventivos.`, { sangria:true, despues:18 });
+  const rango = fechas.length ? ` correspondientes al período comprendido entre el **${fmt(fechas[0])}** y el **${fmt(fechas[fechas.length-1])}**,` : '';
+  parrafoRico(`El presente informe sintetiza los **${tot}** informes de análisis de riesgo registrados en el sistema para el club de referencia,${rango} elaborados oportunamente por la División Informes Preventivos. Del total, **${nLoc}** corresponden a encuentros disputados en condición de local y **${tot - nLoc}** en condición de visitante.`, { sangria:true, despues:14 });
 
-  hist.forEach(inf => {
-    saltoSi(120);
-    y += 8;
-    const tt = `${inf.local} vs ${inf.visitante}`;
-    pdf.setFont('helvetica','bold'); pdf.setFontSize(13);
-    pdf.text(tt, PW/2, y, { align:'center' });
-    const tw = pdf.getTextWidth(tt);
-    pdf.setLineWidth(0.9); pdf.line(PW/2 - tw/2, y + 2.5, PW/2 + tw/2, y + 2.5);
-    y += 16;
-    const metas = [`Fecha: ${fmt(inf.fechaPartido)}`];
-    if (inf.hora) metas.push(`Hora: ${inf.hora}`);
-    metas.push(`Conflictividad: ${NIVEL_TXT[inf.riesgo] || inf.riesgo || '—'}`);
-    if (inf.nroAR) metas.push(`AR Nro. ${inf.nroAR}`);
-    if (inf.iniciales) metas.push(inf.iniciales.toUpperCase());
-    pdf.setFont('helvetica','normal'); pdf.setFontSize(10);
-    pdf.text(metas.join('  ·  '), PW/2, y, { align:'center' });
-    y += 20;
-    const parrafos = (inf.analisis || '').split(/\n\s*\n/).map(s => s.replace(/\n/g,' ').trim()).filter(Boolean);
-    if (!parrafos.length) parrafo('Sin texto de análisis registrado para este encuentro.', { estilo:'italic', size:10 });
-    parrafos.forEach((px, i) => {
-      if (/CONFLICTIVIDAD\s*:?\s*(ALTA|MEDIA|BAJA)/i.test(sinMarcas(px))) {
-        const nv = inf.riesgo || { ALTA:'ALTO', MEDIA:'MEDIO', BAJA:'BAJO' }[(sinMarcas(px).match(/CONFLICTIVIDAD\s*:?\s*(ALTA|MEDIA|BAJA)/i)||[])[1]?.toUpperCase()] || '';
-        recuadroConflictividad(px, nv);
-      } else parrafoRico(px, { sangria:true, estilo: i === 0 ? 'italic' : 'normal' });
-    });
-    y += 6;
-  });
+  kpis();
+  barraDistribucion();
+  evolucion();
+  rivales();
+  tabla();
 
   pie();
-  pdf.save(`Historial_AR_${c.replace(/[^A-Za-z0-9]+/g, '_')}.pdf`);
+  pdf.save(`Estadistica_AR_${c.replace(/[^A-Za-z0-9]+/g, '_')}.pdf`);
 };
 
 function renderTabInformes() {
@@ -2385,7 +2463,7 @@ function renderTabEquipos() {
       <div class="fc">
         <div style="display:flex;justify-content:space-between;align-items:center;gap:8px;flex-wrap:wrap;margin-bottom:4px">
           <div style="font-size:17px;font-weight:700">🏟️ ${c}</div>
-          ${hist.some(i => i.estado === 'finalizado') ? `<button class="btn-mini" style="background:#0C447C;color:#fff;border-color:#0C447C" onclick="exportarHistorialEquipoPDF('${c.replace(/'/g,"\\'")}')">📄 Exportar historial (PDF)</button>` : ''}
+          ${hist.some(i => i.estado === 'finalizado') ? `<button class="btn-mini" style="background:#0C447C;color:#fff;border-color:#0C447C" onclick="exportarHistorialEquipoPDF('${c.replace(/'/g,"\\'")}')">📊 Informe estadístico (PDF)</button>` : ''}
         </div>
         ${riv ? `<div style="font-size:12px;color:#6b7280;line-height:1.7">
           ${riv.max.length ? `<b style="color:#dc2626">Rivalidad máxima:</b> ${riv.max.join(' · ')}<br>` : ''}
