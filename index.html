@@ -1493,6 +1493,28 @@ function parsearAnalisisRiesgo(textoRaw) {
   return { nroAR, fechaInforme, filas };
 }
 
+// Un PDF puede contener VARIOS informes concatenados (ej: compilado anual de 499 págs).
+// Cada informe cierra con "Sin otro particular": se separa por ese cierre y se parsea
+// cada bloque por separado, para que cada partido quede con su Nro. de AR y fecha reales.
+// (Antes se parseaba todo junto y parsearAnalisisRiesgo cortaba en el PRIMER
+// "Sin otro particular" → solo se detectaban los partidos del AR 01.)
+function parsearDocumentoAR(textoRaw) {
+  const raw = String(textoRaw);
+  const cortes = [...raw.matchAll(/Sin otro particular/gi)].map(m => m.index + m[0].length);
+  const bloques = [];
+  let ini = 0;
+  for (const c of cortes) { bloques.push(raw.slice(ini, c)); ini = c; }
+  if (raw.length - ini > 400) bloques.push(raw.slice(ini)); // cola sin cierre formal
+  if (!bloques.length) bloques.push(raw);
+  const filas = [];
+  for (const b of bloques) {
+    const r = parsearAnalisisRiesgo(b);
+    r.filas.forEach(f => { f.nroAR = r.nroAR; f.fechaInforme = r.fechaInforme; });
+    filas.push(...r.filas);
+  }
+  return { filas };
+}
+
 window.importarInformesHistoricos = async (input) => {
   const files = [...input.files]; if (!files.length) return;
   input.value = '';
@@ -1511,8 +1533,8 @@ window.importarInformesHistoricos = async (input) => {
         const tc = await page.getTextContent();
         texto += reconstruirTextoPdf(tc.items) + '\n';
       }
-      const r = parsearAnalisisRiesgo(texto);
-      r.filas.forEach(f => { f.nroAR = r.nroAR; f.fechaInforme = r.fechaInforme; f.archivo = file.name; });
+      const r = parsearDocumentoAR(texto);
+      r.filas.forEach(f => { f.archivo = file.name; });
       todas.push(...r.filas);
       meta.archivos.push(file.name);
     }
