@@ -254,6 +254,7 @@
       <button class="tab active" id="tab-h" onclick="setTab('h')"><span class="tab-ico"><svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m3 9 9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/><path d="M9 22V12h6v10"/></svg></span><span class="tab-lbl">Inicio</span></button>
       <button class="tab" id="tab-i" onclick="setTab('i')"><span class="tab-ico"><svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="8" y="2" width="8" height="4" rx="1"/><path d="M16 4h2a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2h2"/><path d="M12 11h4M12 16h4M8 11h.01M8 16h.01"/></svg></span><span class="tab-lbl">Informes</span></button>
       <button class="tab" id="tab-p" onclick="setTab('p')"><span class="tab-ico"><svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M15 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V7Z"/><path d="M14 2v4a2 2 0 0 0 2 2h4M16 13H8M16 17H8M10 9H8"/></svg></span><span class="tab-lbl">Partes U.C.O.</span></button>
+      <button class="tab" id="tab-d" onclick="setTab('d')"><span class="tab-ico"><svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M2 9V7a2 2 0 0 1 2-2h16a2 2 0 0 1 2 2v2a2 2 0 0 0 0 4v2a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2v-2a2 2 0 0 0 0-4Z"/><path d="M13 5v2M13 17v2M13 11v2"/></svg></span><span class="tab-lbl">Espectáculos P.</span></button>
       <button class="tab" id="tab-e" onclick="setTab('e')"><span class="tab-ico"><svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20 13c0 5-3.5 7.5-7.66 8.95a1 1 0 0 1-.67-.01C7.5 20.5 4 18 4 13V6a1 1 0 0 1 1-1c2 0 4.5-1.2 6.24-2.72a1 1 0 0 1 1.52 0C14.51 3.81 17 5 19 5a1 1 0 0 1 1 1z"/></svg></span><span class="tab-lbl">Equipos</span></button>
       <button class="tab" id="tab-v" onclick="setTab('v')"><span class="tab-ico"><svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="14.5 17.5 3 6 3 3 6 3 17.5 14.5"/><line x1="13" y1="19" x2="19" y2="13"/><line x1="16" y1="16" x2="20" y2="20"/><line x1="19" y1="21" x2="21" y2="19"/><polyline points="14.5 6.5 18 3 21 3 21 6 17.5 9.5"/><line x1="5" y1="14" x2="9" y2="18"/><line x1="7" y1="17" x2="4" y2="20"/><line x1="3" y1="19" x2="5" y2="21"/></svg></span><span class="tab-lbl">Rivalidades</span></button>
       <button class="tab" id="tab-r" onclick="setTab('r')"><span class="tab-ico"><svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m21.73 18-8-14a2 2 0 0 0-3.48 0l-8 14A2 2 0 0 0 4 21h16a2 2 0 0 0 1.73-3Z"/><path d="M12 9v4M12 17h.01"/></svg></span><span class="tab-lbl">Radicalizados</span></button>
@@ -288,12 +289,29 @@ const MODULOS = [
   { id:'h', label:'🏠 Inicio' },
   { id:'i', label:'📋 Informes' },
   { id:'p', label:'📄 Partes U.C.O.' },
+  { id:'d', label:'🎫 Espectáculos Públicos' },
   { id:'e', label:'📊 Equipos' },
   { id:'v', label:'⚔️ Rivalidades' },
   { id:'r', label:'⚠️ Radicalizados' },
   { id:'n', label:'📰 Noticias' },
 ];
 const TODOS_MODULOS = MODULOS.map(m => m.id);
+// ═══ PARED DE DIVISIÓN: DIP (Riesgo/Deportivo) ⇄ DPEP (Espectáculos Públicos) ═══
+// El módulo 'd' es EXCLUSIVO de DPEP. El personal de DIP nunca lo ve, y el de DPEP
+// solo ve ese módulo — nunca la información de DIP. La separación se aplica tanto a
+// la visibilidad de solapas como a la suscripción de datos (no se descarga lo ajeno).
+const MODULOS_DIP = MODULOS.filter(m => m.id !== 'd').map(m => m.id);
+const esDPEP = u => u?.dpep === true;
+// Administrador GENERAL (DSED): ve TODO, ambas divisiones. El usuario DSED lo es por
+// defecto (salvo que se lo marque explícitamente super:false); también puede otorgarse.
+const esSuper = u => u?.super === true || (u?.id === 'DSED' && u?.super !== false);
+function modsVisibles(u) {
+  if (!u) return [];
+  if (esSuper(u)) return TODOS_MODULOS;              // super: todos los módulos, incluido 'd'
+  if (esDPEP(u)) return ['d'];                       // DPEP: únicamente Espectáculos Públicos
+  const base = u.admin ? MODULOS_DIP : (u.permisos || []);
+  return base.filter(id => id !== 'd');              // DIP: todo menos 'd'
+}
 let currentUser = null;
 let usuarios = [];
 
@@ -635,6 +653,7 @@ let st = {
   filtroInformes: 'pendientes',
 };
 let fixture = [], informes = [], equiposExtra = {}, radicalizados = [], partes = [], antecedentes = [];
+let epAnalisis = [], epCoord = [];   // Planificación en Espectáculos Públicos
 let unsubs = [];
 
 function conectarFirebase() {
@@ -648,40 +667,56 @@ function conectarFirebase() {
     }
     render();
   }));
-  unsubs.push(onSnapshot(query(collection(db,'air_fixture'), orderBy('fecha','asc')), snap => {
-    fixture = snap.docs.map(d => ({ id: d.id, ...d.data() })); render();
-  }));
-  unsubs.push(onSnapshot(query(collection(db,'air_informes'), orderBy('creado','desc')), snap => {
-    informes = snap.docs.map(d => ({ id: d.id, ...d.data() })); render();
-  }));
-  unsubs.push(onSnapshot(collection(db,'air_equipos'), snap => {
-    equiposExtra = {}; snap.docs.forEach(d => equiposExtra[d.id] = d.data()); render();
-  }));
-  unsubs.push(onSnapshot(query(collection(db,'radicalizados_copa'), orderBy('ts','desc')), snap => {
-    radicalizados = snap.docs.map(d => ({ id: d.id, ...d.data() })); render();
-  }));
-  unsubs.push(onSnapshot(query(collection(db,'air_partes'), orderBy('fecha','desc')), snap => {
-    partes = snap.docs.map(d => ({ id: d.id, ...d.data() })); render();
-  }));
-  unsubs.push(onSnapshot(query(collection(db,'air_antecedentes'), orderBy('fecha','desc')), snap => {
-    antecedentes = snap.docs.map(d => ({ id: d.id, ...d.data() })); render();
-  }));
+  // Papelera: compartida, pero cada división solo ve/restaura lo suyo (se filtra al render).
   unsubs.push(onSnapshot(query(collection(db,'air_papelera'), orderBy('eliminadoEn','desc')), snap => {
     papelera = snap.docs.map(d => ({ id: d.id, ...d.data() })); render();
   }));
-  unsubs.push(onSnapshot(collection(db,'air_rivalidades'), snap => {
-    rivCustom = {}; snap.docs.forEach(d => rivCustom[d.id] = { id: d.id, ...d.data() }); render();
-  }));
+
+  if (esSuper(currentUser) || !esDPEP(currentUser)) {
+    // ── Datos DIP (deportivo/riesgo). El super los ve; los clientes DPEP puros, no. ──
+    unsubs.push(onSnapshot(query(collection(db,'air_fixture'), orderBy('fecha','asc')), snap => {
+      fixture = snap.docs.map(d => ({ id: d.id, ...d.data() })); render();
+    }));
+    unsubs.push(onSnapshot(query(collection(db,'air_informes'), orderBy('creado','desc')), snap => {
+      informes = snap.docs.map(d => ({ id: d.id, ...d.data() })); render();
+    }));
+    unsubs.push(onSnapshot(collection(db,'air_equipos'), snap => {
+      equiposExtra = {}; snap.docs.forEach(d => equiposExtra[d.id] = d.data()); render();
+    }));
+    unsubs.push(onSnapshot(query(collection(db,'radicalizados_copa'), orderBy('ts','desc')), snap => {
+      radicalizados = snap.docs.map(d => ({ id: d.id, ...d.data() })); render();
+    }));
+    unsubs.push(onSnapshot(query(collection(db,'air_partes'), orderBy('fecha','desc')), snap => {
+      partes = snap.docs.map(d => ({ id: d.id, ...d.data() })); render();
+    }));
+    unsubs.push(onSnapshot(query(collection(db,'air_antecedentes'), orderBy('fecha','desc')), snap => {
+      antecedentes = snap.docs.map(d => ({ id: d.id, ...d.data() })); render();
+    }));
+    unsubs.push(onSnapshot(collection(db,'air_rivalidades'), snap => {
+      rivCustom = {}; snap.docs.forEach(d => rivCustom[d.id] = { id: d.id, ...d.data() }); render();
+    }));
+  }
+  if (esSuper(currentUser) || esDPEP(currentUser)) {
+    // ── Datos DPEP (Espectáculos Públicos). El super los ve; los clientes DIP puros, no. ──
+    unsubs.push(onSnapshot(query(collection(db,'ep_analisis'), orderBy('ts','desc')), snap => {
+      epAnalisis = snap.docs.map(d => ({ id: d.id, ...d.data() })); render();
+    }));
+    unsubs.push(onSnapshot(query(collection(db,'ep_coordinacion'), orderBy('ts','desc')), snap => {
+      epCoord = snap.docs.map(d => ({ id: d.id, ...d.data() })); render();
+    }));
+  }
   setTimeout(() => { document.getElementById('loading-overlay').style.display='none'; document.getElementById('app').style.display='block'; render(); }, 600);
 }
 
 function aplicarPermisos() {
-  const perms = currentUser?.admin ? TODOS_MODULOS : (currentUser?.permisos || []);
-  MODULOS.forEach(m => { const el = document.getElementById('tab-'+m.id); if (el) el.style.display = perms.includes(m.id) ? '' : 'none'; });
-  const tu = document.getElementById('tab-u'); if (tu) tu.style.display = currentUser?.admin ? '' : 'none';
-  const puedeVerTab = st.tab === 'u' ? currentUser?.admin : perms.includes(st.tab);
-  if (!puedeVerTab) st.tab = perms[0] || 'h';
-  ['h','i','p','e','v','r','n','u'].forEach(x => { const el = document.getElementById('tab-'+x); if (el) el.className = 'tab'+(st.tab===x?' active':''); });
+  const dpep = esDPEP(currentUser);
+  const vis = modsVisibles(currentUser);
+  MODULOS.forEach(m => { const el = document.getElementById('tab-'+m.id); if (el) el.style.display = vis.includes(m.id) ? '' : 'none'; });
+  const puedeUsuarios = esSuper(currentUser) || (currentUser?.admin && !dpep);
+  const tu = document.getElementById('tab-u'); if (tu) tu.style.display = puedeUsuarios ? '' : 'none';
+  const puedeVerTab = st.tab === 'u' ? puedeUsuarios : vis.includes(st.tab);
+  if (!puedeVerTab) st.tab = vis[0] || 'h';
+  ['h','i','p','d','e','v','r','n','u'].forEach(x => { const el = document.getElementById('tab-'+x); if (el) el.className = 'tab'+(st.tab===x?' active':''); });
   actualizarTituloTab();
 }
 function iniciarApp(userKey, userData) {
@@ -708,14 +743,15 @@ function iniciarApp(userKey, userData) {
 })();
 
 window.setTab = t => {
-  const puede = t === 'u' ? currentUser?.admin : (currentUser?.admin ? TODOS_MODULOS : (currentUser?.permisos || [])).includes(t);
+  const puedeUsuarios = esSuper(currentUser) || (currentUser?.admin && !esDPEP(currentUser));
+  const puede = t === 'u' ? puedeUsuarios : modsVisibles(currentUser).includes(t);
   if (!puede) return;
   st.tab = t;
-  ['h','i','p','e','v','r','n','u'].forEach(x => { const el = document.getElementById('tab-'+x); if(el) el.className = 'tab'+(t===x?' active':''); });
+  ['h','i','p','d','e','v','r','n','u'].forEach(x => { const el = document.getElementById('tab-'+x); if(el) el.className = 'tab'+(t===x?' active':''); });
   actualizarTituloTab();
   render();
 };
-const TITULOS_TAB = { h:'Inicio', i:'Informes de Riesgo', p:'Partes U.C.O.', e:'Equipos', v:'Rivalidades', r:'Radicalizados', n:'Noticias', u:'Usuarios y permisos' };
+const TITULOS_TAB = { h:'Inicio', i:'Informes de Riesgo', p:'Partes U.C.O.', d:'Planificación en Espectáculos Públicos', e:'Equipos', v:'Rivalidades', r:'Radicalizados', n:'Noticias', u:'Usuarios y permisos' };
 function actualizarTituloTab() {
   const el = document.getElementById('tb-title');
   if (el) el.textContent = TITULOS_TAB[st.tab] || '';
@@ -735,7 +771,7 @@ function fechaLarga(iso){ if(!iso) return '—'; const d = new Date(iso+'T12:00:
 // así los vínculos (informe ↔ partido, etc.) quedan intactos al restaurar.
 // ═══════════════════════════════════════════════════════════════════════════════
 let papelera = [];
-const COL_LABEL = { air_fixture:'Partido', air_informes:'Informe de riesgo', air_antecedentes:'Antecedente', air_partes:'Parte U.C.O.', radicalizados_copa:'Radicalizado' };
+const COL_LABEL = { air_fixture:'Partido', air_informes:'Informe de riesgo', air_antecedentes:'Antecedente', air_partes:'Parte U.C.O.', radicalizados_copa:'Radicalizado', ep_analisis:'Análisis de riesgo (espectáculos)', ep_coordinacion:'Informe de coordinación' };
 // Convierte Timestamps a Date para que sobrevivan el viaje a la papelera y vuelvan como Timestamps
 function limpiarTs(o){ const r = {}; for (const [k,v] of Object.entries(o||{})) r[k] = (v && typeof v.toDate === 'function') ? v.toDate() : v; return r; }
 
@@ -748,6 +784,7 @@ async function borrarConPapelera(col, id, etiqueta) {
     await setDoc(doc(db,'air_papelera', pid), {
       col, docId: id, data: limpiarTs(snap.data()),
       etiqueta: etiqueta || COL_LABEL[col] || col,
+      division: (col === 'ep_analisis' || col === 'ep_coordinacion') ? 'dpep' : 'dip',
       eliminadoEn: serverTimestamp(), por: currentUser?.id || '',
     });
     await deleteDoc(ref);
@@ -3332,8 +3369,10 @@ function renderTabPartes() {
 // ═══════════════════════════════════════════════════════════════════════════════
 let formUsuario = false;
 function renderTabUsuarios() {
-  if (!currentUser?.admin) return `<div class="fc">Sin permisos para ver esta sección.</div>`;
+  if (!currentUser?.admin && !esSuper(currentUser)) return `<div class="fc">Sin permisos para ver esta sección.</div>`;
   const adminsActivos = usuarios.filter(u => u.admin && u.activo !== false).length;
+  const miDiv = esDPEP(currentUser) ? 'dpep' : 'dip';
+  const papeleraVis = esSuper(currentUser) ? papelera : papelera.filter(p => (p.division || 'dip') === miDiv);
   return `
   <div class="fc">
     <div style="display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:8px">
@@ -3349,13 +3388,14 @@ function renderTabUsuarios() {
         <div><div class="sec-label">Usuario (para ingresar)</div><input id="nu-user" placeholder="Ej: PEREZ" style="text-transform:uppercase"></div>
         <div><div class="sec-label">Nombre / dependencia</div><input id="nu-nombre" placeholder="Ej: Of. Pérez — DIP"></div>
       </div>
-      <div class="fr fr2">
+      <div class="fr fr3">
         <div><div class="sec-label">Contraseña</div><input id="nu-clave" type="text" placeholder="Contraseña" autocomplete="off"></div>
-        <div><div class="sec-label">Rol</div><select id="nu-admin"><option value="no">Usuario</option><option value="si">Administrador ★</option></select></div>
+        <div><div class="sec-label">División</div><select id="nu-div"><option value="dip">DIP — Riesgo / Deportivo</option><option value="dpep">DPEP — Espectáculos Públicos</option></select></div>
+        <div><div class="sec-label">Rol</div><select id="nu-admin"><option value="no">Usuario</option><option value="si">Administrador ★</option><option value="super">Admin general — ve todo ⭐</option></select></div>
       </div>
-      <div class="sec-label">Módulos habilitados</div>
+      <div class="sec-label">Módulos habilitados <span style="font-weight:500;text-transform:none;letter-spacing:0">(solo aplica a División DIP; DPEP accede únicamente a Espectáculos Públicos)</span></div>
       <div style="display:flex;gap:8px;flex-wrap:wrap;margin-top:4px">
-        ${MODULOS.map(m => `<label style="display:flex;align-items:center;gap:6px;font-size:13px;background:#fff;border:1px solid #e5e7eb;border-radius:8px;padding:6px 10px;cursor:pointer"><input type="checkbox" class="nu-perm" value="${m.id}" checked style="width:15px;height:15px;accent-color:#0C447C"> ${m.label}</label>`).join('')}
+        ${MODULOS.filter(m=>m.id!=='d').map(m => `<label style="display:flex;align-items:center;gap:6px;font-size:13px;background:#fff;border:1px solid #e5e7eb;border-radius:8px;padding:6px 10px;cursor:pointer"><input type="checkbox" class="nu-perm" value="${m.id}" checked style="width:15px;height:15px;accent-color:#0C447C"> ${m.label}</label>`).join('')}
       </div>
       <div class="btns-row" style="margin-top:12px"><button class="btn-main" style="flex:none;padding:9px 18px" onclick="crearUsuario()">💾 Crear usuario</button></div>
     </div>` : ''}
@@ -3364,12 +3404,12 @@ function renderTabUsuarios() {
   <div class="fc" style="margin-top:14px">
     <div style="display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:8px;margin-bottom:8px">
       <div>
-        <div style="font-size:15px;font-weight:700">🗑 Papelera (${papelera.length})</div>
-        <div style="font-size:11.5px;color:#6b7280;margin-top:2px">Todo lo eliminado en la app queda acá y se puede restaurar con sus vínculos intactos.</div>
+        <div style="font-size:15px;font-weight:700">🗑 Papelera (${papeleraVis.length})</div>
+        <div style="font-size:11.5px;color:#6b7280;margin-top:2px">Todo lo eliminado en tu división queda acá y se puede restaurar con sus vínculos intactos.</div>
       </div>
-      ${papelera.length ? `<button class="btn-mini" style="color:#b91c1c" onclick="vaciarPapelera()">Vaciar papelera</button>` : ''}
+      ${papeleraVis.length ? `<button class="btn-mini" style="color:#b91c1c" onclick="vaciarPapelera()">Vaciar papelera</button>` : ''}
     </div>
-    ${papelera.length ? papelera.slice(0,40).map(p => {
+    ${papeleraVis.length ? papeleraVis.slice(0,40).map(p => {
       const d = p.data || {};
       const detalle = d.local && d.visitante ? `${d.local} vs ${d.visitante}${d.fecha||d.fechaPartido?' · '+fmt(d.fecha||d.fechaPartido):''}` : (d.titulo || d.nombre || d.club || '');
       return `<div style="font-size:12px;padding:7px 0;border-bottom:1px solid #f3f4f6;display:flex;justify-content:space-between;gap:8px;flex-wrap:wrap;align-items:center">
@@ -3379,34 +3419,46 @@ function renderTabUsuarios() {
           <button class="btn-mini" style="color:#b91c1c;padding:3px 8px" onclick="purgarPapelera('${p.id}')">✕</button>
         </span>
       </div>`;
-    }).join('') + (papelera.length > 40 ? `<div style="font-size:11px;color:#6b7280;margin-top:6px">… y ${papelera.length-40} más.</div>` : '') : `<div class="empty" style="padding:14px">La papelera está vacía.</div>`}
+    }).join('') + (papeleraVis.length > 40 ? `<div style="font-size:11px;color:#6b7280;margin-top:6px">… y ${papeleraVis.length-40} más.</div>` : '') : `<div class="empty" style="padding:14px">La papelera está vacía.</div>`}
   </div>`;
 }
 function usuarioCardHtml(u, adminsActivos) {
   const esYo = u.id === currentUser.id;
-  const perms = u.admin ? TODOS_MODULOS : (u.permisos || []);
+  const sup = esSuper(u);
+  const dpep = esDPEP(u);
+  const perms = u.admin ? MODULOS_DIP : (u.permisos || []);
   const ultimoAdmin = u.admin && u.activo !== false && adminsActivos <= 1;
+  const divBadge = sup
+    ? '<span style="font-size:11px;font-weight:700;color:#b45309;background:#fef3c7;border:1px solid #fde68a;border-radius:20px;padding:2px 9px">⭐ GENERAL</span>'
+    : (dpep
+      ? '<span style="font-size:11px;font-weight:700;color:#7c3aed;background:#f3e8ff;border:1px solid #e9d5ff;border-radius:20px;padding:2px 9px">🎫 DPEP</span>'
+      : '<span style="font-size:11px;font-weight:700;color:#0C447C;background:#eef4fb;border:1px solid #bcd3ec;border-radius:20px;padding:2px 9px">🛡️ DIP</span>');
   return `
   <div class="fc" style="${u.activo === false ? 'opacity:.55' : ''}">
     <div style="display:flex;justify-content:space-between;align-items:flex-start;gap:10px;flex-wrap:wrap">
       <div>
         <b style="font-size:15px">👤 ${esc(u.id)}</b>
-        ${u.admin ? '<span style="color:#b45309;font-size:12px;font-weight:700"> ★ Admin</span>' : ''}
+        ${divBadge}
+        ${u.admin && !sup ? '<span style="color:#b45309;font-size:12px;font-weight:700"> ★ Admin</span>' : ''}
         ${esYo ? '<span style="font-size:11px;color:#2563eb"> (vos)</span>' : ''}
         ${u.activo === false ? '<span style="font-size:11px;color:#b91c1c;font-weight:700"> · DESHABILITADO</span>' : ''}
         <div style="font-size:12px;color:#6b7280">${esc(u.nombre || '—')}</div>
       </div>
       <div style="display:flex;gap:6px;flex-wrap:wrap">
         <button class="btn-mini" onclick="cambiarClaveUsuario('${u.id}')">🔑 Cambiar clave</button>
-        <button class="btn-mini" onclick="toggleAdminUsuario('${u.id}')" ${ultimoAdmin ? 'disabled title="Es el único administrador activo"' : ''}>${u.admin ? '⬇ Quitar admin' : '⬆ Hacer admin'}</button>
+        <button class="btn-mini" onclick="toggleSuperUsuario('${u.id}')" ${esYo?'disabled title="No podés cambiar tu propio rol general"':''}>⭐ ${sup?'Quitar general':'Admin general'}</button>
+        ${sup ? '' : `<button class="btn-mini" onclick="toggleDivisionUsuario('${u.id}')" ${esYo?'disabled title="No podés cambiar tu propia división"':''}>🔀 ${dpep?'Pasar a DIP':'Pasar a DPEP'}</button>
+        <button class="btn-mini" onclick="toggleAdminUsuario('${u.id}')" ${ultimoAdmin ? 'disabled title="Es el único administrador activo"' : ''}>${u.admin ? '⬇ Quitar admin' : '⬆ Hacer admin'}</button>`}
         <button class="btn-mini" onclick="toggleActivoUsuario('${u.id}')" ${esYo || ultimoAdmin ? 'disabled' : ''}>${u.activo === false ? '✅ Habilitar' : '🚫 Deshabilitar'}</button>
         <button class="btn-mini" style="color:#b91c1c;border-color:#fca5a5" onclick="eliminarUsuario('${u.id}')" ${esYo || ultimoAdmin ? 'disabled' : ''}>🗑 Eliminar</button>
       </div>
     </div>
+    ${sup ? `<div style="font-size:12px;color:#6b7280;margin-top:10px;padding:8px 10px;background:#fffbeb;border:1px solid #fde68a;border-radius:8px">⭐ <b>Administrador general</b>: acceso completo a todas las divisiones (DIP y DPEP) y a todos los módulos.</div>`
+    : (dpep ? `<div style="font-size:12px;color:#6b7280;margin-top:10px;padding:8px 10px;background:#faf5ff;border:1px solid #e9d5ff;border-radius:8px">🎫 Acceso <b>exclusivo</b> a <b>Planificación en Espectáculos Públicos</b>. No accede a la información de DIP.</div>` : `
     <div style="display:flex;gap:8px;flex-wrap:wrap;margin-top:10px">
-      ${MODULOS.map(m => `<label style="display:flex;align-items:center;gap:6px;font-size:12px;background:${perms.includes(m.id) ? '#eef4fb' : '#f9fafb'};border:1px solid ${perms.includes(m.id) ? '#bcd3ec' : '#e5e7eb'};border-radius:8px;padding:5px 9px;cursor:${u.admin ? 'not-allowed' : 'pointer'}"><input type="checkbox" ${perms.includes(m.id) ? 'checked' : ''} ${u.admin ? 'disabled' : ''} onchange="togglePermisoUsuario('${u.id}','${m.id}',this.checked)" style="width:14px;height:14px;accent-color:#0C447C"> ${m.label}</label>`).join('')}
+      ${MODULOS.filter(m=>m.id!=='d').map(m => `<label style="display:flex;align-items:center;gap:6px;font-size:12px;background:${perms.includes(m.id) ? '#eef4fb' : '#f9fafb'};border:1px solid ${perms.includes(m.id) ? '#bcd3ec' : '#e5e7eb'};border-radius:8px;padding:5px 9px;cursor:${u.admin ? 'not-allowed' : 'pointer'}"><input type="checkbox" ${perms.includes(m.id) ? 'checked' : ''} ${u.admin ? 'disabled' : ''} onchange="togglePermisoUsuario('${u.id}','${m.id}',this.checked)" style="width:14px;height:14px;accent-color:#0C447C"> ${m.label}</label>`).join('')}
     </div>
-    ${u.admin ? '<div style="font-size:11px;color:#9ca3af;margin-top:6px">Los administradores tienen acceso a todos los módulos.</div>' : ''}
+    ${u.admin ? '<div style="font-size:11px;color:#9ca3af;margin-top:6px">Los administradores DIP acceden a todos los módulos de su división (excepto Espectáculos Públicos).</div>' : ''}`)}
   </div>`;
 }
 window.toggleFormUsuario = () => { formUsuario = !formUsuario; render(); };
@@ -3415,12 +3467,36 @@ window.crearUsuario = async () => {
   const nombre = (document.getElementById('nu-nombre').value || '').trim();
   const clave = document.getElementById('nu-clave').value;
   const admin = document.getElementById('nu-admin').value === 'si';
-  const permisos = Array.from(document.querySelectorAll('.nu-perm:checked')).map(c => c.value);
+  const dpep = (document.getElementById('nu-div')?.value || 'dip') === 'dpep';
+  const permisos = Array.from(document.querySelectorAll('.nu-perm:checked')).map(c => c.value).filter(x => x !== 'd');
   if (!id || !clave) { alert('Completá usuario y contraseña.'); return; }
   if (usuarios.some(u => u.id === id)) { alert('Ya existe un usuario con ese nombre.'); return; }
-  if (!admin && permisos.length === 0) { alert('Habilitá al menos un módulo.'); return; }
-  await setDoc(doc(db,'air_usuarios',id), { nombre, clave, admin, activo: true, permisos: admin ? TODOS_MODULOS : permisos, creado: serverTimestamp() });
+  if (!dpep && !admin && permisos.length === 0) { alert('Habilitá al menos un módulo.'); return; }
+  const datos = dpep
+    ? { nombre, clave, admin, dpep: true, activo: true, permisos: ['d'], creado: serverTimestamp() }
+    : { nombre, clave, admin, dpep: false, activo: true, permisos: admin ? MODULOS_DIP : permisos, creado: serverTimestamp() };
+  await setDoc(doc(db,'air_usuarios',id), datos);
   formUsuario = false; render();
+};
+window.toggleDivisionUsuario = async id => {
+  const u = usuarios.find(x => x.id === id); if (!u) return;
+  const aDPEP = !esDPEP(u);
+  if (!confirm(aDPEP
+      ? `¿Pasar a ${id} a la División DPEP (Espectáculos Públicos)? Perderá el acceso a la información de DIP y verá solo ese módulo.`
+      : `¿Pasar a ${id} a la División DIP? Perderá el acceso a Espectáculos Públicos.`)) return;
+  const datos = aDPEP
+    ? { dpep: true, permisos: ['d'] }
+    : { dpep: false, permisos: u.admin ? MODULOS_DIP : [MODULOS_DIP[0]] };
+  await updateDoc(doc(db,'air_usuarios',id), datos);
+};
+window.toggleSuperUsuario = async id => {
+  const u = usuarios.find(x => x.id === id); if (!u) return;
+  const hacer = !esSuper(u);
+  if (!confirm(hacer
+      ? `¿Designar a ${id} como Administrador GENERAL? Tendrá acceso completo a todas las divisiones (DIP y DPEP) y a todos los módulos.`
+      : `¿Quitar a ${id} el rol de Administrador GENERAL?`)) return;
+  // super:false es explícito para poder degradar incluso al DSED (regla por ID).
+  await updateDoc(doc(db,'air_usuarios',id), hacer ? { super: true, admin: true } : { super: false });
 };
 window.cambiarClaveUsuario = async id => {
   const nueva = prompt(`Nueva contraseña para ${id}:`);
@@ -3431,7 +3507,8 @@ window.cambiarClaveUsuario = async id => {
 window.toggleAdminUsuario = async id => {
   const u = usuarios.find(x => x.id === id); if (!u) return;
   if (u.admin && !confirm(`¿Quitar rol de administrador a ${id}?`)) return;
-  await updateDoc(doc(db,'air_usuarios',id), u.admin ? { admin: false } : { admin: true, permisos: TODOS_MODULOS });
+  if (u.admin) { await updateDoc(doc(db,'air_usuarios',id), { admin: false }); return; }
+  await updateDoc(doc(db,'air_usuarios',id), esDPEP(u) ? { admin: true, permisos: ['d'] } : { admin: true, permisos: MODULOS_DIP });
 };
 window.toggleActivoUsuario = async id => {
   const u = usuarios.find(x => x.id === id); if (!u) return;
@@ -3449,6 +3526,450 @@ window.togglePermisoUsuario = async (id, mod, on) => {
   await updateDoc(doc(db,'air_usuarios',id), { permisos: Array.from(set) });
 };
 
+// ═══ MÓDULO PLANIFICACIÓN EN ESPECTÁCULOS PÚBLICOS ═══
+// ═══════════════════════════════════════════════════════════════════════════════
+// TAB PLANIFICACIÓN EN ESPECTÁCULOS PÚBLICOS (DIP)
+// Dos tipos de documento, con su formato institucional propio:
+//   1) ANÁLISIS DE RIESGO EN ESPECTÁCULOS PÚBLICOS  → formato "Parte Informativo"
+//      (comportamiento de seguidores de bandas musicales + antecedentes)
+//   2) INFORME DE COORDINACIÓN → formato "Nota" del Comité de Eventos Masivos
+// Ambos se resguardan en Firestore (ep_analisis / ep_coordinacion) y se pueden
+// exportar a PDF (jsPDF) y a Word (.doc HTML compatible con MS Word / Google Docs).
+// Marcas de texto admitidas en los cuerpos:  **negrita**   __subrayado__
+// ═══════════════════════════════════════════════════════════════════════════════
+
+let epSub = 'ana';          // 'ana' = análisis de riesgo | 'coord' = coordinación
+let epAnaDraft = null;      // borrador análisis en edición
+let epCoordDraft = null;    // borrador coordinación en edición
+let epAnaExp = null, epCoordExp = null;
+
+// ── Cierres / firmas por defecto (editables y recordadas por dispositivo) ────────
+const EP_CIERRE_ANA   = 'Por lo aquí expuesto, se eleva el presente a esa instancia a los fines operativos que estime corresponder.';
+const EP_CIERRE_COORD = 'Es cuanto tengo para informar, se eleva el presente para su correcta prosecución administrativa y los fines que estime corresponder.';
+const EP_DEST_DEFAULT = 'Sr. Jefe del DEPARTAMENTO SEGURIDAD EN ESPECTÁCULOS PÚBLICOS';
+function epFirmaAna(){ try { return JSON.parse(localStorage.getItem('ep_firma_ana')) || { nombre:'Comisario Leandro Darío ESTEVEZ', cargo:'Jefe División Informes Preventivos' }; } catch(e){ return { nombre:'Comisario Leandro Darío ESTEVEZ', cargo:'Jefe División Informes Preventivos' }; } }
+function epFirmaCoord(){ try { return JSON.parse(localStorage.getItem('ep_firma_coord')) || { nombre:'Subcomisario L.P 2.412 Ricardo Leonel GARCIA IRIARTE', cargo:'División PLANIFICACIÓN EN ESPECTÁCULOS PÚBLICOS' }; } catch(e){ return { nombre:'Subcomisario L.P 2.412 Ricardo Leonel GARCIA IRIARTE', cargo:'División PLANIFICACIÓN EN ESPECTÁCULOS PÚBLICOS' }; } }
+
+// Scaffold que orienta la redacción de un análisis nuevo (se puede borrar/editar)
+const EP_ANA_SCAFFOLD =
+`En el día de la fecha, en cumplimiento de los deberes y obligaciones emanados oportunamente por la Jefatura Institucional, en momentos que personal de esta Dependencia se hallaba realizando la labor preventiva diaria en búsqueda de información a través de fuentes públicas, se pudo observar a través de distintas plataformas de redes sociales una publicación vinculada a un recital del grupo musical "____".
+
+Según lo observado, se tomó conocimiento de la presentación programada para el día ____ en el ____, encontrándose actualmente en la etapa de comercialización de entradas al público general.
+
+Cabe destacar que el mencionado artista es identificado por el contenido de sus composiciones, las cuales se caracterizan por ____.
+
+Asimismo, se considera pertinente mencionar **antecedentes registrados** ____.
+
+En otro orden es dable destacar que ____. **Por tal motivo no se descartan posibles incidentes para el mentado evento.**`;
+
+// ═══ Utilidades de exportación compartidas ═══════════════════════════════════════
+// Marcas **negrita** / __subrayado__ → HTML (para Word). Escapa primero.
+function epMarcasHtml(txt){
+  return esc(txt || '').replace(/\*\*([^*]+)\*\*/g, '<b>$1</b>').replace(/__([^_]+)__/g, '<u>$1</u>');
+}
+function epNombreArchivo(base){ return (base || 'documento').replace(/[\\/:*?"<>|]+/g,'').replace(/\s+/g,'_').slice(0,80); }
+// Descarga un .doc (HTML compatible con Word). cuerpoHtml = contenido del <body>.
+function epDescargarWord(nombre, cuerpoHtml){
+  const html = `<!DOCTYPE html><html xmlns:o="urn:schemas-microsoft-com:office:office" xmlns:w="urn:schemas-microsoft-com:office:word" xmlns="http://www.w3.org/TR/REC-html40"><head><meta charset="utf-8"><title>${esc(nombre)}</title>
+<!--[if gte mso 9]><xml><w:WordDocument><w:View>Print</w:View><w:Zoom>100</w:Zoom><w:DoNotOptimizeForBrowser/></w:WordDocument></xml><![endif]-->
+<style>
+@page{size:21cm 29.7cm;margin:2.5cm 2.5cm 2.5cm 3cm}
+body{font-family:'Times New Roman',serif;font-size:12pt;line-height:1.5;color:#000}
+p{margin:0 0 10pt 0;text-align:justify}
+.der{text-align:right}.cen{text-align:center}.izq{text-align:left;text-align:justify}
+.ind{text-indent:1.25cm}.b{font-weight:bold}.u{text-decoration:underline}
+u{text-decoration:underline}
+.firma{margin-top:70pt;text-align:center}.firma p{text-align:center;margin:0}
+.inis p{margin:0;font-weight:bold}
+table.inis-box{border-collapse:collapse;margin-top:24pt}
+table.inis-box td{border:1px solid #000;width:2cm;height:0.9cm;font-weight:bold;text-align:center;font-size:11pt}
+</style></head><body>${cuerpoHtml}</body></html>`;
+  const blob = new Blob(['\ufeff', html], { type: 'application/msword' });
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href = url; a.download = nombre.toLowerCase().endsWith('.doc') ? nombre : nombre + '.doc';
+  document.body.appendChild(a); a.click(); a.remove();
+  setTimeout(() => URL.revokeObjectURL(url), 1500);
+}
+
+// Fecha larga estilo institucional: "15 de abril de 2.026"
+function epFechaLargaDoc(iso){
+  if(!iso) return '____';
+  const d = new Date(iso + 'T12:00:00'); if (isNaN(d)) return '____';
+  const a = d.getFullYear();
+  return `${d.getDate()} de ${MESES[d.getMonth()]} de ${String(a).slice(0,1)}.${String(a).slice(1)}`;
+}
+
+// ═══ jsPDF: helpers de párrafo con marcas, reutilizables por ambos documentos ═══
+async function epPreparaPDF(){
+  await loadScript('https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js');
+  const { jsPDF } = window.jspdf;
+  const pdf = new jsPDF({ unit:'pt', format:'a4' });
+  const PW = 595.28, PH = 841.89, ML = 64, MR = 64, MW = PW - ML - MR;
+  const ctx = { pdf, PW, PH, ML, MR, MW, y: 84 };
+  // tokeniza **negrita** __subrayado__
+  ctx.tok = (texto) => {
+    const toks = []; let b=false,u=false,buf='';
+    const push=()=>{ if(buf) buf.split(/(\s+)/).forEach(w=>{ if(w!=='') toks.push({w,b,u}); }); buf=''; };
+    for(let i=0;i<texto.length;){
+      if(texto.startsWith('**',i)){ push(); b=!b; i+=2; }
+      else if(texto.startsWith('__',i)){ push(); u=!u; i+=2; }
+      else { buf+=texto[i]; i++; }
+    }
+    push(); return toks.filter(t=>t.w!=='');
+  };
+  ctx.salto = (alto) => { if (ctx.y + alto > ctx.PH - 70) { pdf.addPage(); ctx.y = 84; } };
+  // Párrafo justificado con negrita/subrayado por palabra
+  ctx.parrafo = (texto, opts={}) => {
+    const size = opts.size||11.5, lh = size*1.55, sangria = opts.sangria?34:0, alinear = opts.alinear||'justify';
+    pdf.setFontSize(size);
+    const fuente = t => (opts.italic ? (t.b?'bolditalic':'italic') : (t.b?'bold':'normal'));
+    const toks = ctx.tok(texto).filter(t=>t.w.trim()!=='' ); // colapsa espacios: reconstruimos con medida
+    if (!toks.length){ ctx.y += (opts.despues??8); return; }
+    const esp = (()=>{ pdf.setFont('helvetica','normal'); return pdf.getTextWidth(' '); })();
+    const lineas=[]; let lin=[], ancho=0, maxW=MW-sangria;
+    toks.forEach(t=>{ pdf.setFont('helvetica',fuente(t)); const w=pdf.getTextWidth(t.w);
+      if(lin.length && ancho+esp+w>maxW){ lineas.push({toks:lin,ancho,maxW}); lin=[]; ancho=0; maxW=MW; }
+      ancho += (lin.length?esp:0)+w; lin.push({...t,ww:w}); });
+    if(lin.length) lineas.push({toks:lin,ancho,maxW,ultima:true});
+    lineas.forEach((L,li)=>{
+      ctx.salto(lh);
+      const gaps=L.toks.length-1;
+      const just = alinear==='justify' && !L.ultima && gaps>0;
+      const espL = just ? esp+(L.maxW-L.ancho)/gaps : esp;
+      let x = ML + (li===0?sangria:0);
+      if(alinear==='center'){ x = ML + (MW - L.ancho)/2; }
+      else if(alinear==='right'){ x = ML + (MW - L.ancho); }
+      L.toks.forEach(t=>{ pdf.setFont('helvetica',fuente(t)); pdf.setTextColor(0); pdf.text(t.w,x,ctx.y);
+        if(t.u){ pdf.setLineWidth(0.7); pdf.setDrawColor(0); pdf.line(x,ctx.y+1.6,x+t.ww,ctx.y+1.6); }
+        x += t.ww + (alinear==='justify'?espL:esp); });
+      ctx.y += lh;
+    });
+    ctx.y += (opts.despues??8);
+  };
+  ctx.linea = (texto, opts={}) => ctx.parrafo(texto, { ...opts, alinear: opts.alinear||'left', despues: opts.despues??2 });
+  return ctx;
+}
+
+// ═══ COMPOSICIÓN AUTOMÁTICA del cuerpo de la NOTA de coordinación ════════════════
+// Arma la redacción a partir de los datos cargados en la reunión del Comité.
+function epComponerCoord(f){
+  const p = [];
+  const artista = f.artista?.trim() || '____';
+  const desc = f.descArtista?.trim() ? `de la banda de ${f.descArtista.trim()}` : 'del artista';
+  const predio = f.predio?.trim() || '____';
+  p.push(`En el día de ayer, se llevó a cabo la reunión por el evento a realizarse el día ${f.fechaEvento?.trim()||'____'}, la cual tuvo lugar en ${f.lugarReunion?.trim()||'____'}, a las ${f.horaReunion?.trim()||'____'} horas, reunión convocada a los efectos de coordinar las medidas de seguridad y ordenamiento correspondientes al recital ${desc} "${artista}" programado para desarrollarse en el ${predio}.`);
+  const soporte = f.bandasSoporte?.trim()
+    ? `habrá ${f.bandasSoporte.trim()}` : 'habrá bandas soporte';
+  p.push(`Se prevé un aforo de ${f.aforo?.trim()||'____'} personas, apertura de puertas a partir de las ${f.apertura?.trim()||'____'} horas, ${soporte}, comenzando el show principal a las ${f.showPrincipal?.trim()||'____'} horas.`);
+  if (f.cortes?.trim()) p.push(f.cortes.trim());
+  if (f.alcohol?.trim()) p.push(f.alcohol.trim());
+  if (f.personal?.trim()) p.push(f.personal.trim());
+  if (f.armeria?.trim()) p.push(f.armeria.trim());
+  return p.join('\n\n');
+}
+
+// ═══════════════════════════════════════════════════════════════════════════════
+// RENDER DE LA PESTAÑA
+// ═══════════════════════════════════════════════════════════════════════════════
+function renderTabEP(){
+  const sub = (id,lbl,ico,activo)=>`<button class="btn-mini" style="padding:9px 16px;font-size:12.5px;${activo?'background:#0C447C;color:#fff;border-color:#0C447C;font-weight:700':''}" onclick="epSetSub('${id}')">${ico} ${lbl}</button>`;
+  return `
+  <div class="fc">
+    <div style="display:flex;justify-content:space-between;align-items:flex-start;flex-wrap:wrap;gap:10px">
+      <div>
+        <div style="font-size:16px;font-weight:700">🎫 Planificación en Espectáculos Públicos</div>
+        <div style="font-size:12px;color:#6b7280;margin-top:3px;max-width:620px">Elaboración y resguardo de documentación de la División. Analiza el comportamiento de seguidores de bandas musicales y las tareas de coordinación del Comité de Eventos Masivos. Cada documento se guarda y se exporta a PDF o Word.</div>
+      </div>
+    </div>
+    <div style="display:flex;gap:8px;flex-wrap:wrap;margin-top:12px">
+      ${sub('ana','Análisis de Riesgo','⚠️',epSub==='ana')}
+      ${sub('coord','Informe de Coordinación','🤝',epSub==='coord')}
+    </div>
+  </div>
+  ${epSub==='ana' ? epRenderAnalisis() : epRenderCoord()}`;
+}
+
+// ── Sub-vista: ANÁLISIS DE RIESGO (Parte Informativo) ────────────────────────────
+function epRenderAnalisis(){
+  const d = epAnaDraft;
+  const form = d ? `
+  <div class="fc">
+    <div class="sec-label" style="margin-bottom:8px">${d.id?'✏️ Editando análisis':'➕ Nuevo Análisis de Riesgo en Espectáculos Públicos'}</div>
+    <div class="fr fr3">
+      <div><div class="sec-label">Parte Informativo Nro.</div><input id="ea-nro" value="${esc(d.nro)}"></div>
+      <div><div class="sec-label">Fecha (C.A.B.A.)</div><input id="ea-fecha" type="date" value="${esc(d.fecha)}"></div>
+      <div><div class="sec-label">Iniciales (pie)</div><input id="ea-inis" value="${esc(d.iniciales)}" placeholder="L.N.M / R.P.D / P.M.L"></div>
+    </div>
+    <div class="fr fr1">
+      <div><div class="sec-label">Título del parte (se imprime subrayado)</div><input id="ea-titulo" value="${esc(d.titulo)}" placeholder='Recital del grupo musical "Evaristo"'></div>
+    </div>
+    <div class="sec-label">Cuerpo del análisis <span style="font-weight:500;text-transform:none;letter-spacing:0">— usá <b>**negrita**</b> y <u>__subrayado__</u>. Separá párrafos con una línea en blanco.</span></div>
+    <textarea id="ea-cuerpo" style="min-height:240px;line-height:1.5" oninput="epCampoAna('cuerpo',this.value)">${esc(d.cuerpo)}</textarea>
+    <div style="display:flex;justify-content:flex-end;margin:4px 0 8px"><button class="btn-mini" style="padding:5px 10px;font-size:11px" onclick="epInsertarScaffold()">📝 Insertar redacción base</button></div>
+    <div class="sec-label">Párrafo de cierre</div>
+    <textarea id="ea-cierre" style="min-height:56px" oninput="epCampoAna('cierre',this.value)">${esc(d.cierre)}</textarea>
+    <div class="fr fr2" style="margin-top:8px">
+      <div><div class="sec-label">Firmante</div><input id="ea-firmante" value="${esc(d.firmante)}"></div>
+      <div><div class="sec-label">Cargo del firmante</div><input id="ea-cargo" value="${esc(d.cargo)}"></div>
+    </div>
+    <div class="btns-row" style="margin-top:10px">
+      <button class="btn-main" style="flex:none;padding:9px 18px" onclick="epGuardarAna()">💾 Guardar</button>
+      <button class="btn-mini" style="padding:9px 14px" onclick="epCerrarAna()">Cancelar</button>
+    </div>
+  </div>` : `
+  <div class="fc" style="display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:8px">
+    <div style="font-size:13px;color:#6b7280">Analisis de comportamiento de seguidores de bandas musicales, con antecedentes y evaluación de riesgo. Formato <b>Parte Informativo</b>.</div>
+    <button class="btn-main" style="flex:none;padding:9px 16px" onclick="epNuevoAna()">➕ Nuevo análisis</button>
+  </div>`;
+
+  const lista = epAnalisis.length ? epAnalisis.map(r=>{
+    const exp = epAnaExp===r.id;
+    return `
+    <div class="fc" style="padding:12px 16px">
+      <div style="display:flex;justify-content:space-between;align-items:center;gap:10px;flex-wrap:wrap;cursor:pointer" onclick="epToggleAna('${r.id}')">
+        <div>
+          <b>${esc(r.titulo||'(sin título)')}</b>
+          <span style="font-size:12px;color:#6b7280"> · ${fmt(r.fecha)}${r.nro?' · Parte Nro. '+esc(r.nro):''}</span>
+        </div>
+        <div style="display:flex;gap:6px;align-items:center;flex-wrap:wrap">
+          <button class="btn-mini" style="background:#0C447C;color:#fff;border-color:#0C447C" onclick="event.stopPropagation();epPDFAna('${r.id}')">📄 PDF</button>
+          <button class="btn-mini" onclick="event.stopPropagation();epWordAna('${r.id}')">📝 Word</button>
+          <button class="btn-mini" onclick="event.stopPropagation();epEditarAna('${r.id}')">✏️</button>
+          <button class="btn-mini" style="color:#b91c1c" onclick="event.stopPropagation();epEliminarAna('${r.id}')">🗑</button>
+        </div>
+      </div>
+      ${exp ? `<div style="margin-top:10px;padding:12px;background:#f9fafb;border-radius:8px;font-size:12.5px;line-height:1.6;white-space:pre-wrap">${esc((r.cuerpo||'').replace(/\*\*|__/g,''))}</div>`:''}
+    </div>`;
+  }).join('') : (d?'':`<div class="empty">Todavía no hay análisis guardados.</div>`);
+
+  return form + lista;
+}
+
+// ── Sub-vista: INFORME DE COORDINACIÓN (Nota) ────────────────────────────────────
+function epRenderCoord(){
+  const d = epCoordDraft;
+  const form = d ? `
+  <div class="fc">
+    <div class="sec-label" style="margin-bottom:8px">${d.id?'✏️ Editando informe de coordinación':'➕ Nuevo Informe de Coordinación'}</div>
+    <div class="fr fr3">
+      <div><div class="sec-label">Nota Nro.</div><input id="ec-nro" value="${esc(d.nro)}" placeholder="012"></div>
+      <div><div class="sec-label">Año</div><input id="ec-anio" value="${esc(d.anio)}" placeholder="2.026"></div>
+      <div><div class="sec-label">Fecha (C.A.B.A.)</div><input id="ec-fecha" type="date" value="${esc(d.fecha)}"></div>
+    </div>
+    <div class="fr fr1">
+      <div><div class="sec-label">Destinatario</div><input id="ec-dest" value="${esc(d.destinatario)}"></div>
+    </div>
+    <div class="fr fr1">
+      <div><div class="sec-label">Referencia</div><input id="ec-ref" value="${esc(d.referencia)}" placeholder='Reunión de coordinación – Recital de "BAD RELIGION".'></div>
+    </div>
+
+    <div style="margin:6px 0 4px;padding:12px;background:#f8fafc;border:1px dashed #cbd5e1;border-radius:10px">
+      <div class="sec-label" style="margin-bottom:6px">🗒️ Datos de la reunión del Comité — cargalos y generá la redacción</div>
+      <div class="fr fr3">
+        <div><div class="sec-label">Artista / banda</div><input id="ec-artista" value="${esc(d.artista)}"></div>
+        <div><div class="sec-label">Género (ej: punk rock estadounidense)</div><input id="ec-desc" value="${esc(d.descArtista)}"></div>
+        <div><div class="sec-label">Predio / estadio</div><input id="ec-predio" value="${esc(d.predio)}"></div>
+      </div>
+      <div class="fr fr3">
+        <div><div class="sec-label">Fecha del evento (texto)</div><input id="ec-fev" value="${esc(d.fechaEvento)}" placeholder="miércoles 22 del corriente"></div>
+        <div><div class="sec-label">Lugar de la reunión</div><input id="ec-lugreu" value="${esc(d.lugarReunion)}" placeholder="primer piso de Av. Regimiento Patricios 1142"></div>
+        <div><div class="sec-label">Hora de la reunión</div><input id="ec-hreu" value="${esc(d.horaReunion)}" placeholder="15:00"></div>
+      </div>
+      <div class="fr fr3">
+        <div><div class="sec-label">Aforo</div><input id="ec-aforo" value="${esc(d.aforo)}" placeholder="6000"></div>
+        <div><div class="sec-label">Apertura de puertas</div><input id="ec-apert" value="${esc(d.apertura)}" placeholder="18:00"></div>
+        <div><div class="sec-label">Show principal</div><input id="ec-show" value="${esc(d.showPrincipal)}" placeholder="21:30"></div>
+      </div>
+      <div class="fr fr1">
+        <div><div class="sec-label">Bandas soporte (texto)</div><input id="ec-soporte" value="${esc(d.bandasSoporte)}" placeholder="dos (02) bandas soporte que comenzarán aprox. a las 19:30 horas"></div>
+      </div>
+      <div class="fr fr1"><div><div class="sec-label">Ordenamiento urbano y tránsito</div><textarea id="ec-cortes" style="min-height:52px">${esc(d.cortes)}</textarea></div></div>
+      <div class="fr fr1"><div><div class="sec-label">Expendio de bebidas alcohólicas</div><textarea id="ec-alcohol" style="min-height:44px">${esc(d.alcohol)}</textarea></div></div>
+      <div class="fr fr1"><div><div class="sec-label">Personal policial solicitado</div><textarea id="ec-personal" style="min-height:44px">${esc(d.personal)}</textarea></div></div>
+      <div class="fr fr1"><div><div class="sec-label">Mesa de Presentismo y Armería</div><textarea id="ec-armeria" style="min-height:52px">${esc(d.armeria)}</textarea></div></div>
+      <div style="display:flex;justify-content:flex-end;margin-top:6px"><button class="btn-mini" style="padding:6px 12px" onclick="epGenerarCoord()">⚙️ Generar / actualizar redacción ↓</button></div>
+    </div>
+
+    <div class="sec-label">Cuerpo de la nota <span style="font-weight:500;text-transform:none;letter-spacing:0">— editable. Admite <b>**negrita**</b> y <u>__subrayado__</u>. Párrafos separados por línea en blanco.</span></div>
+    <textarea id="ec-cuerpo" style="min-height:230px;line-height:1.5" oninput="epCampoCoord('cuerpo',this.value)">${esc(d.cuerpo)}</textarea>
+    <div class="sec-label" style="margin-top:8px">Párrafo de cierre</div>
+    <textarea id="ec-cierre" style="min-height:56px" oninput="epCampoCoord('cierre',this.value)">${esc(d.cierre)}</textarea>
+    <div class="fr fr2" style="margin-top:8px">
+      <div><div class="sec-label">Firmante</div><input id="ec-firmante" value="${esc(d.firmante)}"></div>
+      <div><div class="sec-label">Cargo / división</div><input id="ec-cargo" value="${esc(d.cargo)}"></div>
+    </div>
+    <div class="btns-row" style="margin-top:10px">
+      <button class="btn-main" style="flex:none;padding:9px 18px" onclick="epGuardarCoord()">💾 Guardar</button>
+      <button class="btn-mini" style="padding:9px 14px" onclick="epCerrarCoord()">Cancelar</button>
+    </div>
+  </div>` : `
+  <div class="fc" style="display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:8px">
+    <div style="font-size:13px;color:#6b7280">Acta de las tareas de coordinación del Comité de Eventos Masivos. Formato <b>Nota</b>.</div>
+    <button class="btn-main" style="flex:none;padding:9px 16px" onclick="epNuevoCoord()">➕ Nuevo informe</button>
+  </div>`;
+
+  const lista = epCoord.length ? epCoord.map(r=>{
+    const exp = epCoordExp===r.id;
+    return `
+    <div class="fc" style="padding:12px 16px">
+      <div style="display:flex;justify-content:space-between;align-items:center;gap:10px;flex-wrap:wrap;cursor:pointer" onclick="epToggleCoord('${r.id}')">
+        <div>
+          <b>${esc(r.referencia||'(sin referencia)')}</b>
+          <span style="font-size:12px;color:#6b7280"> · ${fmt(r.fecha)}${r.nro?' · Nota Nro. '+esc(r.nro)+(r.anio?' / '+esc(r.anio):''):''}</span>
+        </div>
+        <div style="display:flex;gap:6px;align-items:center;flex-wrap:wrap">
+          <button class="btn-mini" style="background:#0C447C;color:#fff;border-color:#0C447C" onclick="event.stopPropagation();epPDFCoord('${r.id}')">📄 PDF</button>
+          <button class="btn-mini" onclick="event.stopPropagation();epWordCoord('${r.id}')">📝 Word</button>
+          <button class="btn-mini" onclick="event.stopPropagation();epEditarCoord('${r.id}')">✏️</button>
+          <button class="btn-mini" style="color:#b91c1c" onclick="event.stopPropagation();epEliminarCoord('${r.id}')">🗑</button>
+        </div>
+      </div>
+      ${exp ? `<div style="margin-top:10px;padding:12px;background:#f9fafb;border-radius:8px;font-size:12.5px;line-height:1.6;white-space:pre-wrap">${esc((r.cuerpo||'').replace(/\*\*|__/g,''))}</div>`:''}
+    </div>`;
+  }).join('') : (d?'':`<div class="empty">Todavía no hay informes de coordinación guardados.</div>`);
+
+  return form + lista;
+}
+
+// ═══════════════════════════════════════════════════════════════════════════════
+// HANDLERS (window.*)
+// ═══════════════════════════════════════════════════════════════════════════════
+window.epSetSub = s => { epSub = s; render(); };
+
+// ── Análisis ──
+window.epNuevoAna = () => { const f = epFirmaAna(); epAnaDraft = { nro:'', fecha:fechaHoyLocal(), titulo:'', cuerpo:'', cierre:EP_CIERRE_ANA, firmante:f.nombre, cargo:f.cargo, iniciales:'' }; render(); };
+window.epCerrarAna = () => { epAnaDraft = null; render(); };
+window.epCampoAna = (c,v) => { if(epAnaDraft) epAnaDraft[c]=v; };
+window.epInsertarScaffold = () => { const t=document.getElementById('ea-cuerpo'); if(!t) return; if(t.value.trim() && !confirm('¿Reemplazar el cuerpo actual por la redacción base?')) return; t.value = EP_ANA_SCAFFOLD; if(epAnaDraft) epAnaDraft.cuerpo = EP_ANA_SCAFFOLD; };
+window.epToggleAna = id => { epAnaExp = epAnaExp===id?null:id; render(); };
+window.epEditarAna = id => { const r = epAnalisis.find(x=>x.id===id); if(!r) return; epAnaDraft = { id:r.id, nro:r.nro||'', fecha:r.fecha||fechaHoyLocal(), titulo:r.titulo||'', cuerpo:r.cuerpo||'', cierre:r.cierre||EP_CIERRE_ANA, firmante:r.firmante||'', cargo:r.cargo||'', iniciales:r.iniciales||'' }; epSub='ana'; render(); window.scrollTo(0,0); };
+window.epGuardarAna = async () => {
+  const g = id => document.getElementById(id)?.value?.trim() || '';
+  const d = { nro:g('ea-nro'), fecha:g('ea-fecha'), titulo:g('ea-titulo'),
+    cuerpo:document.getElementById('ea-cuerpo')?.value||'', cierre:document.getElementById('ea-cierre')?.value?.trim()||EP_CIERRE_ANA,
+    firmante:g('ea-firmante'), cargo:g('ea-cargo'), iniciales:g('ea-inis'), ts:serverTimestamp() };
+  if(!d.titulo){ alert('Completá el título del parte.'); return; }
+  if(!d.cuerpo.trim()){ alert('El cuerpo del análisis no puede estar vacío.'); return; }
+  try{ localStorage.setItem('ep_firma_ana', JSON.stringify({ nombre:d.firmante, cargo:d.cargo })); }catch(e){}
+  try{
+    if(epAnaDraft?.id) await updateDoc(doc(db,'ep_analisis',epAnaDraft.id), d);
+    else await addDoc(collection(db,'ep_analisis'), d);
+    epAnaDraft = null; render();
+  }catch(e){ alert('No se pudo guardar: '+e.message); }
+};
+window.epEliminarAna = id => { borrarConPapelera('ep_analisis', id, 'Análisis de riesgo (espectáculos)'); };
+
+// ── Coordinación ──
+window.epNuevoCoord = () => { const f = epFirmaCoord(); const hoy=new Date(); epCoordDraft = { nro:'', anio:`${String(hoy.getFullYear()).slice(0,1)}.${String(hoy.getFullYear()).slice(1)}`, fecha:fechaHoyLocal(), destinatario:EP_DEST_DEFAULT, referencia:'', artista:'', descArtista:'', predio:'', fechaEvento:'', lugarReunion:'', horaReunion:'', aforo:'', apertura:'', showPrincipal:'', bandasSoporte:'', cortes:'', alcohol:'Se deja constancia de que en el interior del predio habrá expendio de bebidas alcohólicas, el cual finalizará con el comienzo del Show Principal.', personal:'Se solicitó personal policial para acompañamiento de Espacios Públicos.', armeria:'', cuerpo:'', cierre:EP_CIERRE_COORD, firmante:f.nombre, cargo:f.cargo }; render(); };
+window.epCerrarCoord = () => { epCoordDraft = null; render(); };
+window.epCampoCoord = (c,v) => { if(epCoordDraft) epCoordDraft[c]=v; };
+window.epToggleCoord = id => { epCoordExp = epCoordExp===id?null:id; render(); };
+// Recolecta los campos del formulario al objeto draft (sin re-render)
+function epRecolectarCoord(){
+  if(!epCoordDraft) return;
+  const g = id => document.getElementById(id)?.value ?? '';
+  const map = { 'ec-nro':'nro','ec-anio':'anio','ec-fecha':'fecha','ec-dest':'destinatario','ec-ref':'referencia',
+    'ec-artista':'artista','ec-desc':'descArtista','ec-predio':'predio','ec-fev':'fechaEvento','ec-lugreu':'lugarReunion',
+    'ec-hreu':'horaReunion','ec-aforo':'aforo','ec-apert':'apertura','ec-show':'showPrincipal','ec-soporte':'bandasSoporte',
+    'ec-cortes':'cortes','ec-alcohol':'alcohol','ec-personal':'personal','ec-armeria':'armeria',
+    'ec-cuerpo':'cuerpo','ec-cierre':'cierre','ec-firmante':'firmante','ec-cargo':'cargo' };
+  for(const [id,k] of Object.entries(map)){ const el=document.getElementById(id); if(el) epCoordDraft[k]=el.value; }
+}
+window.epGenerarCoord = () => { epRecolectarCoord(); epCoordDraft.cuerpo = epComponerCoord(epCoordDraft); render(); };
+window.epEditarCoord = id => { const r = epCoord.find(x=>x.id===id); if(!r) return; epCoordDraft = { ...r }; epSub='coord'; render(); window.scrollTo(0,0); };
+window.epGuardarCoord = async () => {
+  epRecolectarCoord();
+  const d = { ...epCoordDraft }; delete d.id; d.ts = serverTimestamp();
+  if(!d.referencia?.trim()){ alert('Completá la referencia.'); return; }
+  if(!d.cuerpo?.trim()){ alert('El cuerpo de la nota no puede estar vacío. Cargá los datos y usá "Generar redacción".'); return; }
+  try{ localStorage.setItem('ep_firma_coord', JSON.stringify({ nombre:d.firmante, cargo:d.cargo })); }catch(e){}
+  try{
+    if(epCoordDraft?.id) await updateDoc(doc(db,'ep_coordinacion',epCoordDraft.id), d);
+    else await addDoc(collection(db,'ep_coordinacion'), d);
+    epCoordDraft = null; render();
+  }catch(e){ alert('No se pudo guardar: '+e.message); }
+};
+window.epEliminarCoord = id => { borrarConPapelera('ep_coordinacion', id, 'Informe de coordinación'); };
+
+// ═══════════════════════════════════════════════════════════════════════════════
+// EXPORTACIÓN — ANÁLISIS DE RIESGO (Parte Informativo)
+// ═══════════════════════════════════════════════════════════════════════════════
+function epParrafosDe(txt){ return (txt||'').split(/\n\s*\n/).map(s=>s.replace(/\n/g,' ').trim()).filter(Boolean); }
+
+window.epPDFAna = async id => {
+  const r = epAnalisis.find(x=>x.id===id); if(!r) return;
+  const c = await epPreparaPDF(); const { pdf, PW, ML, MR, MW } = c;
+  try{ pdf.addImage(LOGO_POL,'PNG', ML, 40, 52, 56); }catch(e){}
+  c.y = 112;
+  c.linea(`**Parte Informativo Nro. ${r.nro||'—'}**`, { size:12, despues:8 });
+  c.linea(`**C.A.B.A., ${epFechaLargaDoc(r.fecha)}**`, { size:12, despues:16 });
+  c.parrafo(`__${(r.titulo||'').trim()}__`, { alinear:'center', size:12, despues:16 });
+  epParrafosDe(r.cuerpo).forEach(p => c.parrafo(p, { sangria:true, despues:10 }));
+  c.parrafo((r.cierre||EP_CIERRE_ANA), { sangria:true, despues:40 });
+  // Firma centrada
+  c.salto(70);
+  pdf.setFont('helvetica','bold'); pdf.setFontSize(11.5);
+  pdf.text((r.firmante||''), PW/2, c.y, { align:'center' }); c.y += 15;
+  pdf.text((r.cargo||''), PW/2, c.y, { align:'center' }); c.y += 30;
+  // Iniciales al pie
+  if(r.iniciales){ pdf.setFont('helvetica','bold'); pdf.setFontSize(10);
+    r.iniciales.split(/[\/,]/).map(s=>s.trim()).filter(Boolean).forEach(ii=>{ c.salto(14); pdf.text(ii, ML, c.y); c.y += 14; }); }
+  pdf.save(`Parte_Informativo_${epNombreArchivo(r.titulo||r.nro)}.pdf`);
+};
+
+window.epWordAna = id => {
+  const r = epAnalisis.find(x=>x.id===id); if(!r) return;
+  let b = '';
+  b += `<p class="izq"><span class="b">Parte Informativo Nro. ${esc(r.nro||'—')}</span></p>`;
+  b += `<p class="izq"><span class="b">C.A.B.A., ${esc(epFechaLargaDoc(r.fecha))}</span></p>`;
+  b += `<p class="cen"><span class="b"><u>${esc((r.titulo||'').trim())}</u></span></p>`;
+  epParrafosDe(r.cuerpo).forEach(p => { b += `<p class="ind">${epMarcasHtml(p)}</p>`; });
+  b += `<p class="ind">${epMarcasHtml(r.cierre||EP_CIERRE_ANA)}</p>`;
+  b += `<div class="firma"><p class="b">${esc(r.firmante||'')}</p><p class="b">${esc(r.cargo||'')}</p></div>`;
+  if(r.iniciales){ b += `<div class="inis" style="margin-top:24pt">`; r.iniciales.split(/[\/,]/).map(s=>s.trim()).filter(Boolean).forEach(ii=>{ b += `<p>${esc(ii)}</p>`; }); b += `</div>`; }
+  epDescargarWord(`Parte_Informativo_${epNombreArchivo(r.titulo||r.nro)}`, b);
+};
+
+// ═══════════════════════════════════════════════════════════════════════════════
+// EXPORTACIÓN — INFORME DE COORDINACIÓN (Nota)
+// ═══════════════════════════════════════════════════════════════════════════════
+window.epPDFCoord = async id => {
+  const r = epCoord.find(x=>x.id===id); if(!r) return;
+  const c = await epPreparaPDF(); const { pdf, PW, ML, MR, MW } = c;
+  try{ pdf.addImage(LOGO_POL,'PNG', ML, 40, 52, 56); }catch(e){}
+  // Cabecera superior derecha
+  pdf.setFont('helvetica','normal'); pdf.setFontSize(11);
+  pdf.text(`CIUDAD AUTÓNOMA DE BUENOS AIRES, ${epFechaLargaDoc(r.fecha)}`, PW-MR, 56, { align:'right' });
+  pdf.setFont('helvetica','bold');
+  pdf.text(`Nota Nro.: ${r.nro||'—'} / ${r.anio||''}`, PW-MR, 72, { align:'right' });
+  c.y = 120;
+  c.parrafo(`**${(r.destinatario||EP_DEST_DEFAULT)}**`, { alinear:'center', size:11.5, despues:6 });
+  // Referencia: "Referencia" subrayado + texto
+  c.parrafo(`__Referencia:__ ${(r.referencia||'').trim()}`, { size:11.5, despues:16, alinear:'left' });
+  epParrafosDe(r.cuerpo).forEach(p => c.parrafo(p, { sangria:true, despues:10 }));
+  c.parrafo((r.cierre||EP_CIERRE_COORD), { sangria:true, despues:44 });
+  c.salto(70);
+  pdf.setFont('helvetica','bold'); pdf.setFontSize(10.5);
+  pdf.text((r.firmante||''), PW/2, c.y, { align:'center' }); c.y += 14;
+  pdf.text((r.cargo||''), PW/2, c.y, { align:'center' });
+  pdf.save(`Nota_Coordinacion_${epNombreArchivo(r.referencia||r.nro)}.pdf`);
+};
+
+window.epWordCoord = id => {
+  const r = epCoord.find(x=>x.id===id); if(!r) return;
+  let b = '';
+  b += `<p class="der">CIUDAD AUTÓNOMA DE BUENOS AIRES, ${esc(epFechaLargaDoc(r.fecha))}</p>`;
+  b += `<p class="der"><span class="b">Nota Nro.: ${esc(r.nro||'—')} / ${esc(r.anio||'')}</span></p>`;
+  b += `<p class="cen"><span class="b">${esc(r.destinatario||EP_DEST_DEFAULT)}</span></p>`;
+  b += `<p class="izq"><span class="b"><u>Referencia:</u></span> ${epMarcasHtml((r.referencia||'').trim())}</p>`;
+  epParrafosDe(r.cuerpo).forEach(p => { b += `<p class="ind">${epMarcasHtml(p)}</p>`; });
+  b += `<p class="ind">${epMarcasHtml(r.cierre||EP_CIERRE_COORD)}</p>`;
+  b += `<div class="firma"><p class="b">${esc(r.firmante||'')}</p><p class="b">${esc(r.cargo||'')}</p></div>`;
+  epDescargarWord(`Nota_Coordinacion_${epNombreArchivo(r.referencia||r.nro)}`, b);
+};
+
+
 function render() {
   const c = document.getElementById('content-area'); if (!c || !st.perfilActual) return;
   const activeEl = document.activeElement; const activeId = activeEl?.id; const selStart = activeEl?.selectionStart;
@@ -3460,6 +3981,7 @@ function render() {
     case 'r': c.innerHTML = renderTabRadicalizados(); break;
     case 'n': c.innerHTML = renderTabNoticias(); break;
     case 'p': c.innerHTML = renderTabPartes(); break;
+    case 'd': c.innerHTML = renderTabEP(); break;
     case 'u': c.innerHTML = renderTabUsuarios(); break;
   }
   if (activeId) { const el = document.getElementById(activeId); if (el && el.tagName !== 'BUTTON') { el.focus(); try{ el.setSelectionRange(selStart, selStart); }catch(e){} } }
