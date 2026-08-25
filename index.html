@@ -3547,7 +3547,13 @@ let epAnaExp = null, epCoordExp = null;
 const EP_CIERRE_ANA   = 'Por lo aquí expuesto, se eleva el presente a esa instancia a los fines operativos que estime corresponder.';
 const EP_CIERRE_COORD = 'Es cuanto tengo para informar, se eleva el presente para su correcta prosecución administrativa y los fines que estime corresponder.';
 const EP_DEST_DEFAULT = 'Sr. Jefe del DEPARTAMENTO SEGURIDAD EN ESPECTÁCULOS PÚBLICOS';
-function epFirmaAna(){ try { return JSON.parse(localStorage.getItem('ep_firma_ana')) || { nombre:'Comisario Leandro Darío ESTEVEZ', cargo:'Jefe División Informes Preventivos' }; } catch(e){ return { nombre:'Comisario Leandro Darío ESTEVEZ', cargo:'Jefe División Informes Preventivos' }; } }
+function epFirmaAna(){ try { return JSON.parse(localStorage.getItem('ep_firma_ana')) || { nombre:'Comisario Alejandro Gustavo GASPARIN SINISTERRA', cargo:'Jefe División PLANIFICACIÓN EN ESPECTÁCULOS PÚBLICOS' }; } catch(e){ return { nombre:'Comisario Alejandro Gustavo GASPARIN SINISTERRA', cargo:'Jefe División PLANIFICACIÓN EN ESPECTÁCULOS PÚBLICOS' }; } }
+// Firmantes del Análisis de Riesgo de Espectáculos Públicos (DPEP): titular y su reemplazo.
+const EP_FIRMAS_ANA = [
+  { nombre:'Comisario Alejandro Gustavo GASPARIN SINISTERRA', cargo:'Jefe División PLANIFICACIÓN EN ESPECTÁCULOS PÚBLICOS' },
+  { nombre:'Subcomisario Leonel GARCIA IRIARTE', cargo:'2do Jefe División PLANIFICACIÓN EN ESPECTÁCULOS PÚBLICOS' },
+];
+const epFirmaAnaIdx = r => { const i = EP_FIRMAS_ANA.findIndex(f => f.nombre === (r?.firmante||'')); return i < 0 ? 0 : i; };
 function epFirmaCoord(){ try { return JSON.parse(localStorage.getItem('ep_firma_coord')) || { nombre:'Subcomisario L.P 2.412 Ricardo Leonel GARCIA IRIARTE', cargo:'División PLANIFICACIÓN EN ESPECTÁCULOS PÚBLICOS' }; } catch(e){ return { nombre:'Subcomisario L.P 2.412 Ricardo Leonel GARCIA IRIARTE', cargo:'División PLANIFICACIÓN EN ESPECTÁCULOS PÚBLICOS' }; } }
 
 // Scaffold que orienta la redacción de un análisis nuevo (se puede borrar/editar)
@@ -3709,9 +3715,12 @@ function epRenderAnalisis(){
     <div style="display:flex;justify-content:flex-end;margin:4px 0 8px"><button class="btn-mini" style="padding:5px 10px;font-size:11px" onclick="epInsertarScaffold()">📝 Insertar redacción base</button></div>
     <div class="sec-label">Párrafo de cierre</div>
     <textarea id="ea-cierre" style="min-height:56px" oninput="epCampoAna('cierre',this.value)">${esc(d.cierre)}</textarea>
-    <div class="fr fr2" style="margin-top:8px">
-      <div><div class="sec-label">Firmante</div><input id="ea-firmante" value="${esc(d.firmante)}"></div>
-      <div><div class="sec-label">Cargo del firmante</div><input id="ea-cargo" value="${esc(d.cargo)}"></div>
+    <div class="fr fr1" style="margin-top:8px">
+      <div><div class="sec-label">Firma (DPEP)</div>
+        <select id="ea-firma" onchange="epSetFirmaAna(this.value)">
+          ${EP_FIRMAS_ANA.map((f,i)=>`<option value="${i}" ${(d.firmaIdx??0)===i?'selected':''}>${esc(f.nombre)} — ${esc(f.cargo)}</option>`).join('')}
+        </select>
+      </div>
     </div>
     <div class="btns-row" style="margin-top:10px">
       <button class="btn-main" style="flex:none;padding:9px 18px" onclick="epGuardarAna()">💾 Guardar</button>
@@ -3838,20 +3847,22 @@ function epRenderCoord(){
 window.epSetSub = s => { epSub = s; render(); };
 
 // ── Análisis ──
-window.epNuevoAna = () => { const f = epFirmaAna(); epAnaDraft = { nro:'', fecha:fechaHoyLocal(), titulo:'', cuerpo:'', cierre:EP_CIERRE_ANA, firmante:f.nombre, cargo:f.cargo, iniciales:'' }; render(); };
+window.epNuevoAna = () => { epAnaDraft = { nro:'', fecha:fechaHoyLocal(), titulo:'', cuerpo:'', cierre:EP_CIERRE_ANA, firmaIdx:0, firmante:EP_FIRMAS_ANA[0].nombre, cargo:EP_FIRMAS_ANA[0].cargo, iniciales:'' }; render(); };
+window.epSetFirmaAna = v => { const i = parseInt(v,10)||0; const f = EP_FIRMAS_ANA[i] || EP_FIRMAS_ANA[0]; if(epAnaDraft){ epAnaDraft.firmaIdx=i; epAnaDraft.firmante=f.nombre; epAnaDraft.cargo=f.cargo; } };
 window.epCerrarAna = () => { epAnaDraft = null; render(); };
 window.epCampoAna = (c,v) => { if(epAnaDraft) epAnaDraft[c]=v; };
 window.epInsertarScaffold = () => { const t=document.getElementById('ea-cuerpo'); if(!t) return; if(t.value.trim() && !confirm('¿Reemplazar el cuerpo actual por la redacción base?')) return; t.value = EP_ANA_SCAFFOLD; if(epAnaDraft) epAnaDraft.cuerpo = EP_ANA_SCAFFOLD; };
 window.epToggleAna = id => { epAnaExp = epAnaExp===id?null:id; render(); };
-window.epEditarAna = id => { const r = epAnalisis.find(x=>x.id===id); if(!r) return; epAnaDraft = { id:r.id, nro:r.nro||'', fecha:r.fecha||fechaHoyLocal(), titulo:r.titulo||'', cuerpo:r.cuerpo||'', cierre:r.cierre||EP_CIERRE_ANA, firmante:r.firmante||'', cargo:r.cargo||'', iniciales:r.iniciales||'' }; epSub='ana'; render(); window.scrollTo(0,0); };
+window.epEditarAna = id => { const r = epAnalisis.find(x=>x.id===id); if(!r) return; const fi = epFirmaAnaIdx(r); epAnaDraft = { id:r.id, nro:r.nro||'', fecha:r.fecha||fechaHoyLocal(), titulo:r.titulo||'', cuerpo:r.cuerpo||'', cierre:r.cierre||EP_CIERRE_ANA, firmaIdx:fi, firmante:EP_FIRMAS_ANA[fi].nombre, cargo:EP_FIRMAS_ANA[fi].cargo, iniciales:r.iniciales||'' }; epSub='ana'; render(); window.scrollTo(0,0); };
 window.epGuardarAna = async () => {
   const g = id => document.getElementById(id)?.value?.trim() || '';
+  const fi = parseInt(document.getElementById('ea-firma')?.value ?? '0', 10) || 0;
+  const firma = EP_FIRMAS_ANA[fi] || EP_FIRMAS_ANA[0];
   const d = { nro:g('ea-nro'), fecha:g('ea-fecha'), titulo:g('ea-titulo'),
     cuerpo:document.getElementById('ea-cuerpo')?.value||'', cierre:document.getElementById('ea-cierre')?.value?.trim()||EP_CIERRE_ANA,
-    firmante:g('ea-firmante'), cargo:g('ea-cargo'), iniciales:g('ea-inis'), ts:serverTimestamp() };
+    firmaIdx:fi, firmante:firma.nombre, cargo:firma.cargo, iniciales:g('ea-inis'), ts:serverTimestamp() };
   if(!d.titulo){ alert('Completá el título del parte.'); return; }
   if(!d.cuerpo.trim()){ alert('El cuerpo del análisis no puede estar vacío.'); return; }
-  try{ localStorage.setItem('ep_firma_ana', JSON.stringify({ nombre:d.firmante, cargo:d.cargo })); }catch(e){}
   try{
     if(epAnaDraft?.id) await updateDoc(doc(db,'ep_analisis',epAnaDraft.id), d);
     else await addDoc(collection(db,'ep_analisis'), d);
