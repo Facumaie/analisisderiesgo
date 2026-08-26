@@ -270,7 +270,7 @@
     <div class="topbar no-print">
       <div>
         <div class="tb-title" id="tb-title">Inicio</div>
-        <div class="tb-sub">Departamento Seguridad en Eventos Deportivos</div>
+        <div class="tb-sub" id="tb-sub">Departamento Seguridad en Eventos Deportivos</div>
       </div>
     </div>
     <div class="content" id="content-area"></div>
@@ -754,10 +754,14 @@ window.setTab = t => {
   actualizarTituloTab();
   render();
 };
-const TITULOS_TAB = { h:'Inicio', i:'Informes de Riesgo', p:'Partes U.C.O.', d:'Planificación en Espectáculos Públicos', e:'Equipos', v:'Rivalidades', r:'Radicalizados', n:'Noticias', u:'Usuarios y permisos' };
+const TITULOS_TAB = { h:'Inicio', i:'Informes de Riesgo', p:'Partes U.C.O.', d:'División Planificación en Espectáculos Públicos', e:'Equipos', v:'Rivalidades', r:'Radicalizados', n:'Noticias', u:'Usuarios y permisos' };
+const SUB_DEFAULT = 'Departamento Seguridad en Eventos Deportivos';
+const SUBTITULOS_TAB = { d:'Departamento Seguridad en Espectáculos Públicos' };
 function actualizarTituloTab() {
   const el = document.getElementById('tb-title');
   if (el) el.textContent = TITULOS_TAB[st.tab] || '';
+  const sub = document.getElementById('tb-sub');
+  if (sub) sub.textContent = SUBTITULOS_TAB[st.tab] || SUB_DEFAULT;
 }
 
 // Fecha de HOY en hora LOCAL (toISOString usa UTC: de 21 a 24 hs Argentina daría mañana)
