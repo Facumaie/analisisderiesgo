@@ -254,7 +254,7 @@
       <button class="tab active" id="tab-h" onclick="setTab('h')"><span class="tab-ico"><svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m3 9 9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/><path d="M9 22V12h6v10"/></svg></span><span class="tab-lbl">Inicio</span></button>
       <button class="tab" id="tab-i" onclick="setTab('i')"><span class="tab-ico"><svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="8" y="2" width="8" height="4" rx="1"/><path d="M16 4h2a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2h2"/><path d="M12 11h4M12 16h4M8 11h.01M8 16h.01"/></svg></span><span class="tab-lbl">Informes</span></button>
       <button class="tab" id="tab-p" onclick="setTab('p')"><span class="tab-ico"><svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M15 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V7Z"/><path d="M14 2v4a2 2 0 0 0 2 2h4M16 13H8M16 17H8M10 9H8"/></svg></span><span class="tab-lbl">Partes U.C.O.</span></button>
-      <button class="tab" id="tab-d" onclick="setTab('d')"><span class="tab-ico"><svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M2 9V7a2 2 0 0 1 2-2h16a2 2 0 0 1 2 2v2a2 2 0 0 0 0 4v2a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2v-2a2 2 0 0 0 0-4Z"/><path d="M13 5v2M13 17v2M13 11v2"/></svg></span><span class="tab-lbl">Espectáculos P.</span></button>
+      <button class="tab" id="tab-d" onclick="setTab('d')"><span class="tab-ico"><svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M2 9V7a2 2 0 0 1 2-2h16a2 2 0 0 1 2 2v2a2 2 0 0 0 0 4v2a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2v-2a2 2 0 0 0 0-4Z"/><path d="M13 5v2M13 17v2M13 11v2"/></svg></span><span class="tab-lbl">DPEP</span></button>
       <button class="tab" id="tab-e" onclick="setTab('e')"><span class="tab-ico"><svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20 13c0 5-3.5 7.5-7.66 8.95a1 1 0 0 1-.67-.01C7.5 20.5 4 18 4 13V6a1 1 0 0 1 1-1c2 0 4.5-1.2 6.24-2.72a1 1 0 0 1 1.52 0C14.51 3.81 17 5 19 5a1 1 0 0 1 1 1z"/></svg></span><span class="tab-lbl">Equipos</span></button>
       <button class="tab" id="tab-v" onclick="setTab('v')"><span class="tab-ico"><svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="14.5 17.5 3 6 3 3 6 3 17.5 14.5"/><line x1="13" y1="19" x2="19" y2="13"/><line x1="16" y1="16" x2="20" y2="20"/><line x1="19" y1="21" x2="21" y2="19"/><polyline points="14.5 6.5 18 3 21 3 21 6 17.5 9.5"/><line x1="5" y1="14" x2="9" y2="18"/><line x1="7" y1="17" x2="4" y2="20"/><line x1="3" y1="19" x2="5" y2="21"/></svg></span><span class="tab-lbl">Rivalidades</span></button>
       <button class="tab" id="tab-r" onclick="setTab('r')"><span class="tab-ico"><svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m21.73 18-8-14a2 2 0 0 0-3.48 0l-8 14A2 2 0 0 0 4 21h16a2 2 0 0 0 1.73-3Z"/><path d="M12 9v4M12 17h.01"/></svg></span><span class="tab-lbl">Radicalizados</span></button>
@@ -653,7 +653,7 @@ let st = {
   filtroInformes: 'pendientes',
 };
 let fixture = [], informes = [], equiposExtra = {}, radicalizados = [], partes = [], antecedentes = [];
-let epAnalisis = [], epCoord = [];   // Planificación en Espectáculos Públicos
+let epAnalisis = [], epCoord = [], epPost = [];   // Planificación en Espectáculos Públicos
 let unsubs = [];
 
 function conectarFirebase() {
@@ -703,6 +703,9 @@ function conectarFirebase() {
     }));
     unsubs.push(onSnapshot(query(collection(db,'ep_coordinacion'), orderBy('ts','desc')), snap => {
       epCoord = snap.docs.map(d => ({ id: d.id, ...d.data() })); render();
+    }));
+    unsubs.push(onSnapshot(query(collection(db,'ep_postevento'), orderBy('ts','desc')), snap => {
+      epPost = snap.docs.map(d => ({ id: d.id, ...d.data() })); render();
     }));
   }
   setTimeout(() => { document.getElementById('loading-overlay').style.display='none'; document.getElementById('app').style.display='block'; render(); }, 600);
@@ -771,7 +774,7 @@ function fechaLarga(iso){ if(!iso) return '—'; const d = new Date(iso+'T12:00:
 // así los vínculos (informe ↔ partido, etc.) quedan intactos al restaurar.
 // ═══════════════════════════════════════════════════════════════════════════════
 let papelera = [];
-const COL_LABEL = { air_fixture:'Partido', air_informes:'Informe de riesgo', air_antecedentes:'Antecedente', air_partes:'Parte U.C.O.', radicalizados_copa:'Radicalizado', ep_analisis:'Análisis de riesgo (espectáculos)', ep_coordinacion:'Informe de coordinación' };
+const COL_LABEL = { air_fixture:'Partido', air_informes:'Informe de riesgo', air_antecedentes:'Antecedente', air_partes:'Parte U.C.O.', radicalizados_copa:'Radicalizado', ep_analisis:'Análisis de riesgo (espectáculos)', ep_coordinacion:'Informe de coordinación', ep_postevento:'Informe post evento' };
 // Convierte Timestamps a Date para que sobrevivan el viaje a la papelera y vuelvan como Timestamps
 function limpiarTs(o){ const r = {}; for (const [k,v] of Object.entries(o||{})) r[k] = (v && typeof v.toDate === 'function') ? v.toDate() : v; return r; }
 
@@ -784,7 +787,7 @@ async function borrarConPapelera(col, id, etiqueta) {
     await setDoc(doc(db,'air_papelera', pid), {
       col, docId: id, data: limpiarTs(snap.data()),
       etiqueta: etiqueta || COL_LABEL[col] || col,
-      division: (col === 'ep_analisis' || col === 'ep_coordinacion') ? 'dpep' : 'dip',
+      division: (col === 'ep_analisis' || col === 'ep_coordinacion' || col === 'ep_postevento') ? 'dpep' : 'dip',
       eliminadoEn: serverTimestamp(), por: currentUser?.id || '',
     });
     await deleteDoc(ref);
@@ -3538,14 +3541,16 @@ window.togglePermisoUsuario = async (id, mod, on) => {
 // Marcas de texto admitidas en los cuerpos:  **negrita**   __subrayado__
 // ═══════════════════════════════════════════════════════════════════════════════
 
-let epSub = 'ana';          // 'ana' = análisis de riesgo | 'coord' = coordinación
+let epSub = 'ana';          // 'ana' = análisis de riesgo | 'coord' = coordinación | 'post' = post evento
 let epAnaDraft = null;      // borrador análisis en edición
 let epCoordDraft = null;    // borrador coordinación en edición
-let epAnaExp = null, epCoordExp = null;
+let epPostDraft = null;     // borrador informe post evento en edición
+let epAnaExp = null, epCoordExp = null, epPostExp = null;
 
 // ── Cierres / firmas por defecto (editables y recordadas por dispositivo) ────────
 const EP_CIERRE_ANA   = 'Por lo aquí expuesto, se eleva el presente a esa instancia a los fines operativos que estime corresponder.';
 const EP_CIERRE_COORD = 'Es cuanto tengo para informar, se eleva el presente para su correcta prosecución administrativa y los fines que estime corresponder.';
+const EP_CIERRE_POST  = 'Es cuanto tengo para informar, se eleva el presente para su correcta prosecución administrativa y los fines que estime corresponder.';
 const EP_DEST_DEFAULT = 'Sr. Jefe del DEPARTAMENTO SEGURIDAD EN ESPECTÁCULOS PÚBLICOS';
 function epFirmaAna(){ try { return JSON.parse(localStorage.getItem('ep_firma_ana')) || { nombre:'Comisario Alejandro Gustavo GASPARIN SINISTERRA', cargo:'Jefe División PLANIFICACIÓN EN ESPECTÁCULOS PÚBLICOS' }; } catch(e){ return { nombre:'Comisario Alejandro Gustavo GASPARIN SINISTERRA', cargo:'Jefe División PLANIFICACIÓN EN ESPECTÁCULOS PÚBLICOS' }; } }
 // Firmantes del Análisis de Riesgo de Espectáculos Públicos (DPEP): titular y su reemplazo.
@@ -3555,6 +3560,7 @@ const EP_FIRMAS_ANA = [
 ];
 const epFirmaAnaIdx = r => { const i = EP_FIRMAS_ANA.findIndex(f => f.nombre === (r?.firmante||'')); return i < 0 ? 0 : i; };
 function epFirmaCoord(){ try { return JSON.parse(localStorage.getItem('ep_firma_coord')) || { nombre:'Subcomisario L.P 2.412 Ricardo Leonel GARCIA IRIARTE', cargo:'División PLANIFICACIÓN EN ESPECTÁCULOS PÚBLICOS' }; } catch(e){ return { nombre:'Subcomisario L.P 2.412 Ricardo Leonel GARCIA IRIARTE', cargo:'División PLANIFICACIÓN EN ESPECTÁCULOS PÚBLICOS' }; } }
+function epFirmaPost(){ try { return JSON.parse(localStorage.getItem('ep_firma_post')) || epFirmaCoord(); } catch(e){ return epFirmaCoord(); } }
 
 // Scaffold que orienta la redacción de un análisis nuevo (se puede borrar/editar)
 const EP_ANA_SCAFFOLD =
@@ -3675,6 +3681,23 @@ function epComponerCoord(f){
   return p.join('\n\n');
 }
 
+// ═══ COMPOSICIÓN AUTOMÁTICA del cuerpo del INFORME POST EVENTO ═══════════════════
+// Arma la redacción de cierre del operativo a partir de lo efectivamente ocurrido.
+function epComponerPost(f){
+  const p = [];
+  const artista = f.artista?.trim() || '____';
+  const desc = f.descArtista?.trim() ? `de la banda de ${f.descArtista.trim()}` : 'del artista';
+  const predio = f.predio?.trim() || '____';
+  p.push(`Me dirijo a Ud. a fin de informar el desarrollo del operativo de seguridad correspondiente al recital ${desc} "${artista}", llevado a cabo el día ${f.fechaEvento?.trim()||'____'} en el ${predio}.`);
+  p.push(`El espectáculo registró un ingreso aproximado de ${f.aforo?.trim()||'____'} personas. La apertura de puertas se produjo a las ${f.apertura?.trim()||'____'} horas, dando comienzo el show principal a las ${f.showPrincipal?.trim()||'____'} horas y finalizando el mismo a las ${f.finShow?.trim()||'____'} horas.`);
+  if (f.desarrollo?.trim())     p.push(f.desarrollo.trim());
+  if (f.procedimientos?.trim()) p.push(f.procedimientos.trim());
+  if (f.asistencias?.trim())    p.push(f.asistencias.trim());
+  if (f.personal?.trim())       p.push(f.personal.trim());
+  if (f.conclusion?.trim())     p.push(f.conclusion.trim());
+  return p.join('\n\n');
+}
+
 // ═══════════════════════════════════════════════════════════════════════════════
 // RENDER DE LA PESTAÑA
 // ═══════════════════════════════════════════════════════════════════════════════
@@ -3691,9 +3714,10 @@ function renderTabEP(){
     <div style="display:flex;gap:8px;flex-wrap:wrap;margin-top:12px">
       ${sub('ana','Análisis de Riesgo','⚠️',epSub==='ana')}
       ${sub('coord','Informe de Coordinación','🤝',epSub==='coord')}
+      ${sub('post','Informe Post Evento','✅',epSub==='post')}
     </div>
   </div>
-  ${epSub==='ana' ? epRenderAnalisis() : epRenderCoord()}`;
+  ${epSub==='ana' ? epRenderAnalisis() : (epSub==='coord' ? epRenderCoord() : epRenderPost())}`;
 }
 
 // ── Sub-vista: ANÁLISIS DE RIESGO (Parte Informativo) ────────────────────────────
@@ -3841,6 +3865,89 @@ function epRenderCoord(){
   return form + lista;
 }
 
+// ── Sub-vista: INFORME POST EVENTO (Nota) ────────────────────────────────────────
+function epRenderPost(){
+  const d = epPostDraft;
+  const form = d ? `
+  <div class="fc">
+    <div class="sec-label" style="margin-bottom:8px">${d.id?'✏️ Editando informe post evento':'➕ Nuevo Informe Post Evento'}</div>
+    <div class="fr fr3">
+      <div><div class="sec-label">Nota Nro.</div><input id="ep-nro" value="${esc(d.nro)}" placeholder="012"></div>
+      <div><div class="sec-label">Año</div><input id="ep-anio" value="${esc(d.anio)}" placeholder="2.026"></div>
+      <div><div class="sec-label">Fecha (C.A.B.A.)</div><input id="ep-fecha" type="date" value="${esc(d.fecha)}"></div>
+    </div>
+    <div class="fr fr1">
+      <div><div class="sec-label">Destinatario</div><input id="ep-dest" value="${esc(d.destinatario)}"></div>
+    </div>
+    <div class="fr fr1">
+      <div><div class="sec-label">Referencia</div><input id="ep-ref" value="${esc(d.referencia)}" placeholder='Informe post evento – Recital de "BAD RELIGION".'></div>
+    </div>
+
+    <div style="margin:6px 0 4px;padding:12px;background:#f8fafc;border:1px dashed #cbd5e1;border-radius:10px">
+      <div class="sec-label" style="margin-bottom:6px">🗒️ Datos del evento realizado — cargalos y generá la redacción</div>
+      <div class="fr fr3">
+        <div><div class="sec-label">Artista / banda</div><input id="ep-artista" value="${esc(d.artista)}"></div>
+        <div><div class="sec-label">Género (ej: punk rock estadounidense)</div><input id="ep-desc" value="${esc(d.descArtista)}"></div>
+        <div><div class="sec-label">Predio / estadio</div><input id="ep-predio" value="${esc(d.predio)}"></div>
+      </div>
+      <div class="fr fr3">
+        <div><div class="sec-label">Fecha del evento (texto)</div><input id="ep-fev" value="${esc(d.fechaEvento)}" placeholder="miércoles 22 del corriente"></div>
+        <div><div class="sec-label">Público ingresado (aforo)</div><input id="ep-aforo" value="${esc(d.aforo)}" placeholder="6000"></div>
+        <div><div class="sec-label">Apertura de puertas</div><input id="ep-apert" value="${esc(d.apertura)}" placeholder="18:00"></div>
+      </div>
+      <div class="fr fr2">
+        <div><div class="sec-label">Inicio show principal</div><input id="ep-show" value="${esc(d.showPrincipal)}" placeholder="21:30"></div>
+        <div><div class="sec-label">Finalización del espectáculo</div><input id="ep-fin" value="${esc(d.finShow)}" placeholder="23:40"></div>
+      </div>
+      <div class="fr fr1"><div><div class="sec-label">Desarrollo y novedades</div><textarea id="ep-desarrollo" style="min-height:60px">${esc(d.desarrollo)}</textarea></div></div>
+      <div class="fr fr1"><div><div class="sec-label">Procedimientos / demorados / detenidos</div><textarea id="ep-proc" style="min-height:52px">${esc(d.procedimientos)}</textarea></div></div>
+      <div class="fr fr1"><div><div class="sec-label">Asistencias médicas</div><textarea id="ep-asist" style="min-height:44px">${esc(d.asistencias)}</textarea></div></div>
+      <div class="fr fr1"><div><div class="sec-label">Personal policial afectado</div><textarea id="ep-personal" style="min-height:44px">${esc(d.personal)}</textarea></div></div>
+      <div class="fr fr1"><div><div class="sec-label">Conclusión / evaluación</div><textarea id="ep-concl" style="min-height:52px">${esc(d.conclusion)}</textarea></div></div>
+      <div style="display:flex;justify-content:flex-end;margin-top:6px"><button class="btn-mini" style="padding:6px 12px" onclick="epGenerarPost()">⚙️ Generar / actualizar redacción ↓</button></div>
+    </div>
+
+    <div class="sec-label">Cuerpo de la nota <span style="font-weight:500;text-transform:none;letter-spacing:0">— editable. Admite <b>**negrita**</b> y <u>__subrayado__</u>. Párrafos separados por línea en blanco.</span></div>
+    <textarea id="ep-cuerpo" style="min-height:230px;line-height:1.5" oninput="epCampoPost('cuerpo',this.value)">${esc(d.cuerpo)}</textarea>
+    <div class="sec-label" style="margin-top:8px">Párrafo de cierre</div>
+    <textarea id="ep-cierre" style="min-height:56px" oninput="epCampoPost('cierre',this.value)">${esc(d.cierre)}</textarea>
+    <div class="fr fr2" style="margin-top:8px">
+      <div><div class="sec-label">Firmante</div><input id="ep-firmante" value="${esc(d.firmante)}"></div>
+      <div><div class="sec-label">Cargo / división</div><input id="ep-cargo" value="${esc(d.cargo)}"></div>
+    </div>
+    <div class="btns-row" style="margin-top:10px">
+      <button class="btn-main" style="flex:none;padding:9px 18px" onclick="epGuardarPost()">💾 Guardar</button>
+      <button class="btn-mini" style="padding:9px 14px" onclick="epCerrarPost()">Cancelar</button>
+    </div>
+  </div>` : `
+  <div class="fc" style="display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:8px">
+    <div style="font-size:13px;color:#6b7280">Acta de cierre del operativo: desarrollo y novedades del evento realizado. Formato <b>Nota</b>.</div>
+    <button class="btn-main" style="flex:none;padding:9px 16px" onclick="epNuevoPost()">➕ Nuevo informe</button>
+  </div>`;
+
+  const lista = epPost.length ? epPost.map(r=>{
+    const exp = epPostExp===r.id;
+    return `
+    <div class="fc" style="padding:12px 16px">
+      <div style="display:flex;justify-content:space-between;align-items:center;gap:10px;flex-wrap:wrap;cursor:pointer" onclick="epTogglePost('${r.id}')">
+        <div>
+          <b>${esc(r.referencia||'(sin referencia)')}</b>
+          <span style="font-size:12px;color:#6b7280"> · ${fmt(r.fecha)}${r.nro?' · Nota Nro. '+esc(r.nro)+(r.anio?' / '+esc(r.anio):''):''}</span>
+        </div>
+        <div style="display:flex;gap:6px;align-items:center;flex-wrap:wrap">
+          <button class="btn-mini" style="background:#0C447C;color:#fff;border-color:#0C447C" onclick="event.stopPropagation();epPDFPost('${r.id}')">📄 PDF</button>
+          <button class="btn-mini" onclick="event.stopPropagation();epWordPost('${r.id}')">📝 Word</button>
+          <button class="btn-mini" onclick="event.stopPropagation();epEditarPost('${r.id}')">✏️</button>
+          <button class="btn-mini" style="color:#b91c1c" onclick="event.stopPropagation();epEliminarPost('${r.id}')">🗑</button>
+        </div>
+      </div>
+      ${exp ? `<div style="margin-top:10px;padding:12px;background:#f9fafb;border-radius:8px;font-size:12.5px;line-height:1.6;white-space:pre-wrap">${esc((r.cuerpo||'').replace(/\*\*|__/g,''))}</div>`:''}
+    </div>`;
+  }).join('') : (d?'':`<div class="empty">Todavía no hay informes post evento guardados.</div>`);
+
+  return form + lista;
+}
+
 // ═══════════════════════════════════════════════════════════════════════════════
 // HANDLERS (window.*)
 // ═══════════════════════════════════════════════════════════════════════════════
@@ -3902,6 +4009,37 @@ window.epGuardarCoord = async () => {
   }catch(e){ alert('No se pudo guardar: '+e.message); }
 };
 window.epEliminarCoord = id => { borrarConPapelera('ep_coordinacion', id, 'Informe de coordinación'); };
+
+// ── Post evento ──
+window.epNuevoPost = () => { const f = epFirmaPost(); const hoy=new Date(); epPostDraft = { nro:'', anio:`${String(hoy.getFullYear()).slice(0,1)}.${String(hoy.getFullYear()).slice(1)}`, fecha:fechaHoyLocal(), destinatario:EP_DEST_DEFAULT, referencia:'', artista:'', descArtista:'', predio:'', fechaEvento:'', aforo:'', apertura:'', showPrincipal:'', finShow:'', desarrollo:'El desarrollo del evento se llevó a cabo con normalidad, sin registrarse incidentes de relevancia.', procedimientos:'No se registraron procedimientos ni personas demoradas durante el operativo.', asistencias:'No se registraron asistencias médicas de relevancia.', personal:'Se contó con la afectación de personal policial para el acompañamiento y ordenamiento del público asistente.', conclusion:'Finalizado el espectáculo, el público se retiró en forma paulatina y sin incidentes, dándose por concluido el operativo.', cuerpo:'', cierre:EP_CIERRE_POST, firmante:f.nombre, cargo:f.cargo }; render(); };
+window.epCerrarPost = () => { epPostDraft = null; render(); };
+window.epCampoPost = (c,v) => { if(epPostDraft) epPostDraft[c]=v; };
+window.epTogglePost = id => { epPostExp = epPostExp===id?null:id; render(); };
+// Recolecta los campos del formulario al objeto draft (sin re-render)
+function epRecolectarPost(){
+  if(!epPostDraft) return;
+  const map = { 'ep-nro':'nro','ep-anio':'anio','ep-fecha':'fecha','ep-dest':'destinatario','ep-ref':'referencia',
+    'ep-artista':'artista','ep-desc':'descArtista','ep-predio':'predio','ep-fev':'fechaEvento','ep-aforo':'aforo',
+    'ep-apert':'apertura','ep-show':'showPrincipal','ep-fin':'finShow','ep-desarrollo':'desarrollo',
+    'ep-proc':'procedimientos','ep-asist':'asistencias','ep-personal':'personal','ep-concl':'conclusion',
+    'ep-cuerpo':'cuerpo','ep-cierre':'cierre','ep-firmante':'firmante','ep-cargo':'cargo' };
+  for(const [id,k] of Object.entries(map)){ const el=document.getElementById(id); if(el) epPostDraft[k]=el.value; }
+}
+window.epGenerarPost = () => { epRecolectarPost(); epPostDraft.cuerpo = epComponerPost(epPostDraft); render(); };
+window.epEditarPost = id => { const r = epPost.find(x=>x.id===id); if(!r) return; epPostDraft = { ...r }; epSub='post'; render(); window.scrollTo(0,0); };
+window.epGuardarPost = async () => {
+  epRecolectarPost();
+  const d = { ...epPostDraft }; delete d.id; d.ts = serverTimestamp();
+  if(!d.referencia?.trim()){ alert('Completá la referencia.'); return; }
+  if(!d.cuerpo?.trim()){ alert('El cuerpo de la nota no puede estar vacío. Cargá los datos y usá "Generar redacción".'); return; }
+  try{ localStorage.setItem('ep_firma_post', JSON.stringify({ nombre:d.firmante, cargo:d.cargo })); }catch(e){}
+  try{
+    if(epPostDraft?.id) await updateDoc(doc(db,'ep_postevento',epPostDraft.id), d);
+    else await addDoc(collection(db,'ep_postevento'), d);
+    epPostDraft = null; render();
+  }catch(e){ alert('No se pudo guardar: '+e.message); }
+};
+window.epEliminarPost = id => { borrarConPapelera('ep_postevento', id, 'Informe post evento'); };
 
 // ═══════════════════════════════════════════════════════════════════════════════
 // EXPORTACIÓN — ANÁLISIS DE RIESGO (Parte Informativo)
@@ -3978,6 +4116,43 @@ window.epWordCoord = id => {
   b += `<p class="ind">${epMarcasHtml(r.cierre||EP_CIERRE_COORD)}</p>`;
   b += `<div class="firma"><p class="b">${esc(r.firmante||'')}</p><p class="b">${esc(r.cargo||'')}</p></div>`;
   epDescargarWord(`Nota_Coordinacion_${epNombreArchivo(r.referencia||r.nro)}`, b);
+};
+
+// ═══════════════════════════════════════════════════════════════════════════════
+// EXPORTACIÓN — INFORME POST EVENTO (Nota)
+// ═══════════════════════════════════════════════════════════════════════════════
+window.epPDFPost = async id => {
+  const r = epPost.find(x=>x.id===id); if(!r) return;
+  const c = await epPreparaPDF(); const { pdf, PW, ML, MR, MW } = c;
+  try{ pdf.addImage(LOGO_POL,'PNG', ML, 40, 52, 56); }catch(e){}
+  // Cabecera superior derecha
+  pdf.setFont('helvetica','normal'); pdf.setFontSize(11);
+  pdf.text(`CIUDAD AUTÓNOMA DE BUENOS AIRES, ${epFechaLargaDoc(r.fecha)}`, PW-MR, 56, { align:'right' });
+  pdf.setFont('helvetica','bold');
+  pdf.text(`Nota Nro.: ${r.nro||'—'} / ${r.anio||''}`, PW-MR, 72, { align:'right' });
+  c.y = 120;
+  c.parrafo(`**${(r.destinatario||EP_DEST_DEFAULT)}**`, { alinear:'center', size:11.5, despues:6 });
+  c.parrafo(`__Referencia:__ ${(r.referencia||'').trim()}`, { size:11.5, despues:16, alinear:'left' });
+  epParrafosDe(r.cuerpo).forEach(p => c.parrafo(p, { sangria:true, despues:10 }));
+  c.parrafo((r.cierre||EP_CIERRE_POST), { sangria:true, despues:44 });
+  c.salto(70);
+  pdf.setFont('helvetica','bold'); pdf.setFontSize(10.5);
+  pdf.text((r.firmante||''), PW/2, c.y, { align:'center' }); c.y += 14;
+  pdf.text((r.cargo||''), PW/2, c.y, { align:'center' });
+  pdf.save(`Informe_Post_Evento_${epNombreArchivo(r.referencia||r.nro)}.pdf`);
+};
+
+window.epWordPost = id => {
+  const r = epPost.find(x=>x.id===id); if(!r) return;
+  let b = '';
+  b += `<p class="der">CIUDAD AUTÓNOMA DE BUENOS AIRES, ${esc(epFechaLargaDoc(r.fecha))}</p>`;
+  b += `<p class="der"><span class="b">Nota Nro.: ${esc(r.nro||'—')} / ${esc(r.anio||'')}</span></p>`;
+  b += `<p class="cen"><span class="b">${esc(r.destinatario||EP_DEST_DEFAULT)}</span></p>`;
+  b += `<p class="izq"><span class="b"><u>Referencia:</u></span> ${epMarcasHtml((r.referencia||'').trim())}</p>`;
+  epParrafosDe(r.cuerpo).forEach(p => { b += `<p class="ind">${epMarcasHtml(p)}</p>`; });
+  b += `<p class="ind">${epMarcasHtml(r.cierre||EP_CIERRE_POST)}</p>`;
+  b += `<div class="firma"><p class="b">${esc(r.firmante||'')}</p><p class="b">${esc(r.cargo||'')}</p></div>`;
+  epDescargarWord(`Informe_Post_Evento_${epNombreArchivo(r.referencia||r.nro)}`, b);
 };
 
 
