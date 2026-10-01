@@ -1354,10 +1354,37 @@ window.eliminarInforme = async id => {
   await borrarConPapelera('air_informes', id, 'Informe de riesgo'); anDraft = null; render();
 };
 
+// ── Rango de fechas para consolidados (por defecto: semana actual lun–dom) ──
+function _isoLocal(d) { return `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`; }
+function rangoConsolidado() {
+  if (st.consDesde === undefined) {
+    const d = new Date(), lun = new Date(d), dom = new Date(d);
+    lun.setDate(d.getDate() - ((d.getDay() + 6) % 7));
+    dom.setDate(lun.getDate() + 6);
+    st.consDesde = _isoLocal(lun); st.consHasta = _isoLocal(dom);
+  }
+  return { desde: st.consDesde || '', hasta: st.consHasta || '' };
+}
+window.setRangoConsolidado = (campo, v) => { st[campo] = v; render(); };
+window.rangoSemanaActual = () => { st.consDesde = undefined; rangoConsolidado(); render(); };
+window.rangoSinLimite = () => { st.consDesde = ''; st.consHasta = ''; render(); };
+function finalizadosParaConsolidar() {
+  const { desde, hasta } = rangoConsolidado();
+  return informes
+    .filter(i => i.estado === 'finalizado' && !i.historico
+      && (!desde || (i.fechaPartido || '') >= desde)
+      && (!hasta || (i.fechaPartido || '') <= hasta))
+    .sort((a,b) => (a.fechaPartido||'').localeCompare(b.fechaPartido||''));
+}
+function msgSinConsolidar() {
+  const { desde, hasta } = rangoConsolidado();
+  return `No hay informes finalizados entre ${desde ? fmt(desde) : 'el inicio'} y ${hasta ? fmt(hasta) : 'hoy'}.\nRevisá el rango Desde/Hasta.`;
+}
+
 // Consolidado (formato DIP)
 window.generarConsolidado = () => {
-  const fins = informes.filter(i => i.estado === 'finalizado' && !i.historico).sort((a,b) => (a.fechaPartido||'').localeCompare(b.fechaPartido||''));
-  if (!fins.length) { alert('No hay informes finalizados para consolidar.'); return; }
+  const fins = finalizadosParaConsolidar();
+  if (!fins.length) { alert(msgSinConsolidar()); return; }
   const hoy = new Date();
   const nro = prompt('Número de Análisis de Riesgo:', String((informes.filter(i=>i.nroConsolidado).length||0) + 1));
   if (nro === null) return;
@@ -1648,8 +1675,8 @@ window.toggleHistLista = () => { histVerLista = !histVerLista; render(); };
 
 // ── PDF institucional (formato DIP con escudos) ──────────────────────────────
 window.generarConsolidadoPDF = async () => {
-  const fins = informes.filter(i => i.estado === 'finalizado' && !i.historico).sort((a,b) => (a.fechaPartido||'').localeCompare(b.fechaPartido||''));
-  if (!fins.length) { alert('No hay informes finalizados para consolidar.'); return; }
+  const fins = finalizadosParaConsolidar();
+  if (!fins.length) { alert(msgSinConsolidar()); return; }
   const nro = prompt('Número de Análisis de Riesgo:', '1');
   if (nro === null) return;
   // Firma editable: recuerda el último firmante/cargo usados en este dispositivo
@@ -2358,8 +2385,16 @@ function renderTabInformes() {
         ${['pendientes','finalizados','todos'].map(f => `<button class="btn-mini" style="${st.filtroInformes===f?'background:#0C447C;color:#fff;border-color:#0C447C':''}" onclick="setFiltroInformes('${f}')">${f[0].toUpperCase()+f.slice(1)}</button>`).join('')}
         <button class="btn-mini" title="Alternar vista de tarjetas o lista compacta" onclick="setVistaFx()">${st.vistaFx === 'compacto' ? '▤ Tarjetas' : '≡ Compacto'}</button>
       </div>
+      <div style="display:flex;gap:6px;align-items:center;flex-wrap:wrap;width:100%;font-size:12px;color:#6b7280">
+        <span>📅 Consolidar partidos del</span>
+        <input type="date" value="${esc(rangoConsolidado().desde)}" onchange="setRangoConsolidado('consDesde',this.value)" style="font-size:12px;padding:4px 6px">
+        <span>al</span>
+        <input type="date" value="${esc(rangoConsolidado().hasta)}" onchange="setRangoConsolidado('consHasta',this.value)" style="font-size:12px;padding:4px 6px">
+        <button class="btn-mini" onclick="rangoSemanaActual()">Esta semana</button>
+        <button class="btn-mini" onclick="rangoSinLimite()">Todos</button>
+      </div>
       <div style="display:flex;gap:6px;flex-wrap:wrap">
-        <button class="btn-mini" style="background:#0C447C;color:#fff;border-color:#0C447C" onclick="generarConsolidadoPDF()">📕 PDF institucional (${fins.length})</button>
+        <button class="btn-mini" style="background:#0C447C;color:#fff;border-color:#0C447C" onclick="generarConsolidadoPDF()">📕 PDF institucional (${finalizadosParaConsolidar().length})</button>
         <button class="btn-mini" style="background:#059669;color:#fff;border-color:#047857" onclick="generarConsolidado()">📄 Copiar texto consolidado</button>
         <label class="btn-mini" style="cursor:pointer;background:#7c3aed;color:#fff;border-color:#6d28d9">📥 Importar históricos (PDF)<input type="file" accept=".pdf" multiple onchange="importarInformesHistoricos(this)" style="display:none"></label>
         <label class="btn-mini" style="cursor:pointer">📂 Reimportar borrador (JSON)<input type="file" accept=".json,application/json" onchange="importarBorradorJSON(this)" style="display:none"></label>
