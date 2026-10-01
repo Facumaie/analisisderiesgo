@@ -1344,6 +1344,12 @@ window.guardarInforme = async (finalizar = false) => {
     estado: finalizar ? 'finalizado' : 'borrador',
     actualizado: serverTimestamp(),
   };
+  // Autoría según el login (para la estadística interna de administradores)
+  const uid = currentUser?.id || '';
+  const infPrev = anDraft.infId ? informes.find(x => x.id === anDraft.infId) : null;
+  if (!infPrev || (!infPrev.autor && infPrev.estado !== 'finalizado')) data.autor = uid;
+  data.ultimaEdicionPor = uid;
+  if (finalizar) { data.finalizadoPor = uid; data.finalizadoEn = serverTimestamp(); }
   if (anDraft.infId) await updateDoc(doc(db,'air_informes', anDraft.infId), data);
   else { data.creado = serverTimestamp(); const ref = await addDoc(collection(db,'air_informes'), data); anDraft.infId = ref.id; }
   if (finalizar) { anDraft = null; st.partidoAbierto = null; }
@@ -3409,6 +3415,114 @@ function renderTabPartes() {
 // ═══════════════════════════════════════════════════════════════════════════════
 // TAB USUARIOS — gestión de usuarios y permisos (solo administradores)
 // ═══════════════════════════════════════════════════════════════════════════════
+
+// ═══════════════════════════════════════════════════════════════════════════════
+// ESTADÍSTICA INTERNA DE AUTORÍA — ranking de análisis por usuario (solo administradores)
+// Cuenta informes de riesgo propios (no los históricos importados), según el login que los creó.
+// ═══════════════════════════════════════════════════════════════════════════════
+function puedeVerRanking() { return esSuper(currentUser) || (currentUser?.admin && !esDPEP(currentUser)); }
+window.setRkPeriodo = per => {
+  const d = new Date();
+  if (per === 'semana') {
+    const l = new Date(d); l.setDate(d.getDate() - ((d.getDay() + 6) % 7));
+    const dom = new Date(l); dom.setDate(l.getDate() + 6);
+    st.rkDesde = _isoLocal(l); st.rkHasta = _isoLocal(dom);
+  } else if (per === 'mes') {
+    st.rkDesde = _isoLocal(new Date(d.getFullYear(), d.getMonth(), 1));
+    st.rkHasta = _isoLocal(new Date(d.getFullYear(), d.getMonth() + 1, 0));
+  } else { st.rkDesde = ''; st.rkHasta = ''; }
+  render();
+};
+window.setRkFecha = (campo, v) => { st[campo] = v; render(); };
+window.toggleRkTodos = () => { st.rkVerTodos = !st.rkVerTodos; render(); };
+window.asignarAutorInforme = async (id, uid) => {
+  if (!puedeVerRanking() || !uid) return;
+  await updateDoc(doc(db, 'air_informes', id), { autor: uid });
+};
+function panelRankingHtml() {
+  if (!puedeVerRanking()) return '';
+  const desde = st.rkDesde || '', hasta = st.rkHasta || '';
+  const base = informes.filter(i => !i.historico
+    && (!desde || (i.fechaPartido || '') >= desde)
+    && (!hasta || (i.fechaPartido || '') <= hasta));
+  const filas = {};
+  const nueva = (id, nombre) => ({ id, nombre, fin: 0, bor: 0, ALTO: 0, MEDIO: 0, BAJO: 0, ult: '' });
+  usuarios.filter(u => u.activo !== false && !esDPEP(u)).forEach(u => { filas[u.id] = nueva(u.id, u.nombre || ''); });
+  let sinAutor = 0;
+  base.forEach(i => {
+    const fin = i.estado === 'finalizado';
+    if (!i.autor) { if (fin) sinAutor++; return; }
+    const f = filas[i.autor] || (filas[i.autor] = nueva(i.autor, '(usuario no activo)'));
+    if (fin) {
+      f.fin++; if (f[i.riesgo] !== undefined) f[i.riesgo]++;
+      if ((i.fechaPartido || '') > f.ult) f.ult = i.fechaPartido || '';
+    } else f.bor++;
+  });
+  const rank = Object.values(filas).sort((a, b) => b.fin - a.fin || b.bor - a.bor || a.id.localeCompare(b.id));
+  const maxFin = Math.max(1, ...rank.map(r => r.fin));
+  const totalFin = rank.reduce((n, r) => n + r.fin, 0);
+  const medalla = ['🥇', '🥈', '🥉'];
+  let pos = 0, prev = null;
+  const filasHtml = rank.map((r, idx) => {
+    if (r.fin !== prev) { pos = idx + 1; prev = r.fin; }
+    const m = r.fin > 0 && pos <= 3 ? medalla[pos - 1] : `<span style="color:#9ca3af">${pos}</span>`;
+    return `<tr style="border-top:1px solid #f3f4f6">
+      <td style="padding:7px 6px;text-align:center;width:34px">${m}</td>
+      <td style="padding:7px 6px"><b>${esc(r.id)}</b><div style="font-size:10.5px;color:#9ca3af">${esc(r.nombre)}</div></td>
+      <td style="padding:7px 6px;min-width:120px">
+        <div style="display:flex;align-items:center;gap:6px"><b style="min-width:22px">${r.fin}</b>
+        <div style="flex:1;background:#eef2f7;border-radius:4px;height:8px"><div style="width:${Math.round(r.fin / maxFin * 100)}%;background:#0C447C;height:8px;border-radius:4px"></div></div></div>
+      </td>
+      <td style="padding:7px 6px;text-align:center;color:#6b7280">${r.bor || '—'}</td>
+      <td style="padding:7px 6px;text-align:center"><span style="color:#dc2626;font-weight:700">${r.ALTO}</span> · <span style="color:#b45309;font-weight:700">${r.MEDIO}</span> · <span style="color:#047857;font-weight:700">${r.BAJO}</span></td>
+      <td style="padding:7px 6px;color:#6b7280;white-space:nowrap">${r.ult ? fmt(r.ult) : '—'}</td>
+    </tr>`;
+  }).join('');
+
+  const detalle = base.slice().sort((a, b) => (b.fechaPartido || '').localeCompare(a.fechaPartido || ''));
+  const mostrar = st.rkVerTodos ? detalle : detalle.slice(0, 20);
+  const opcionesUsr = usuarios.filter(u => u.activo !== false && !esDPEP(u)).map(u => `<option value="${esc(u.id)}">${esc(u.id)}</option>`).join('');
+  const detalleHtml = mostrar.map(i => `<tr style="border-top:1px solid #f3f4f6">
+      <td style="padding:6px;white-space:nowrap;color:#6b7280">${fmt(i.fechaPartido)}</td>
+      <td style="padding:6px"><b>${esc(i.local)}</b> <span style="color:#9ca3af">vs</span> <b>${esc(i.visitante)}</b></td>
+      <td style="padding:6px">${i.riesgo ? `<span class="bdg bdg-${i.riesgo}" style="font-size:10px">${i.riesgo}</span>` : '—'}${i.estado !== 'finalizado' ? ' <span class="bdg bdg-gris" style="font-size:10px">borrador</span>' : ''}</td>
+      <td style="padding:6px">${i.autor
+        ? `<b>${esc(i.autor)}</b>${i.finalizadoPor && i.finalizadoPor !== i.autor ? `<span style="color:#9ca3af;font-size:10.5px"> · cerró ${esc(i.finalizadoPor)}</span>` : ''}`
+        : `<select onchange="asignarAutorInforme('${i.id}', this.value)" style="font-size:11px;padding:3px 4px"><option value="">Asignar autor…</option>${opcionesUsr}</select>`}</td>
+    </tr>`).join('');
+
+  const btnP = (lbl, per) => `<button class="btn-mini" onclick="setRkPeriodo('${per}')">${lbl}</button>`;
+  return `
+  <div class="fc" style="margin-top:14px">
+    <div style="font-size:16px;font-weight:700">🏆 Ranking de análisis por usuario</div>
+    <div style="font-size:12px;color:#6b7280;margin-top:3px">Informes de riesgo finalizados, según el usuario que los confeccionó. Visible solo para administradores. Se filtra por fecha del partido.</div>
+    <div style="display:flex;gap:6px;align-items:center;flex-wrap:wrap;margin:12px 0;font-size:12px;color:#6b7280">
+      <span>Período:</span>
+      <input type="date" value="${esc(desde)}" onchange="setRkFecha('rkDesde',this.value)" style="font-size:12px;padding:4px 6px">
+      <span>al</span>
+      <input type="date" value="${esc(hasta)}" onchange="setRkFecha('rkHasta',this.value)" style="font-size:12px;padding:4px 6px">
+      ${btnP('Esta semana', 'semana')}${btnP('Este mes', 'mes')}${btnP('Todo', 'todo')}
+    </div>
+    <div style="overflow-x:auto">
+      <table style="width:100%;border-collapse:collapse;font-size:12.5px">
+        <thead><tr style="text-align:left;color:#6b7280;font-size:11px;text-transform:uppercase">
+          <th></th><th style="padding:6px">Usuario</th><th style="padding:6px">Finalizados</th><th style="padding:6px;text-align:center">Borradores</th><th style="padding:6px;text-align:center" title="Alto · Medio · Bajo">A · M · B</th><th style="padding:6px">Último partido</th>
+        </tr></thead>
+        <tbody>${filasHtml || `<tr><td colspan="6" class="empty" style="padding:14px">Sin usuarios para mostrar.</td></tr>`}</tbody>
+      </table>
+    </div>
+    <div style="font-size:11.5px;color:#6b7280;margin-top:8px">Total con autor: <b>${totalFin}</b> finalizados${sinAutor ? ` · <b>${sinAutor}</b> finalizados sin autor registrado (anteriores a este control; podés asignarlos abajo)` : ''}.</div>
+
+    <div style="font-size:14px;font-weight:700;margin:18px 0 6px">📋 Quién hizo cada encuentro</div>
+    <div style="overflow-x:auto">
+      <table style="width:100%;border-collapse:collapse;font-size:12.5px">
+        <thead><tr style="text-align:left;color:#6b7280;font-size:11px;text-transform:uppercase"><th style="padding:6px">Fecha</th><th style="padding:6px">Encuentro</th><th style="padding:6px">Riesgo</th><th style="padding:6px">Autor</th></tr></thead>
+        <tbody>${detalleHtml || `<tr><td colspan="4" class="empty" style="padding:14px">No hay informes en este período.</td></tr>`}</tbody>
+      </table>
+    </div>
+    ${detalle.length > 20 ? `<button class="btn-mini" style="margin-top:8px" onclick="toggleRkTodos()">${st.rkVerTodos ? 'Ver menos' : `Ver los ${detalle.length}`}</button>` : ''}
+  </div>`;
+}
 let formUsuario = false;
 function renderTabUsuarios() {
   if (!currentUser?.admin && !esSuper(currentUser)) return `<div class="fc">Sin permisos para ver esta sección.</div>`;
@@ -3442,6 +3556,7 @@ function renderTabUsuarios() {
       <div class="btns-row" style="margin-top:12px"><button class="btn-main" style="flex:none;padding:9px 18px" onclick="crearUsuario()">💾 Crear usuario</button></div>
     </div>` : ''}
   </div>
+  ${panelRankingHtml()}
   ${usuarios.slice().sort((a,b) => a.id.localeCompare(b.id)).map(u => usuarioCardHtml(u, adminsActivos)).join('')}
   <div class="fc" style="margin-top:14px">
     <div style="display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:8px;margin-bottom:8px">
